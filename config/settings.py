@@ -96,17 +96,15 @@ WSGI_APPLICATION = 'config.wsgi.application'
 
 DATABASES = {
     'default': {
-        # Esta linha é do django-tenants
         'ENGINE': 'django_tenants.postgresql_backend', 
         
-        # O nome do banco que criamos no Passo 2
-        'NAME': config('DB_NAME'),
-        'USER': config('DB_USER'),
-        'PASSWORD': config('DB_PASSWORD'),
+        # CORREÇÃO: Use os nomes exatos do .env
+        'NAME': config('DATABASE_NAME'),
+        'USER': config('DATABASE_USER'),
+        'PASSWORD': config('DATABASE_PASSWORD'), 
         
-        # Deixe estes como padrão
-        'HOST': 'localhost',
-        'PORT': '5432', # A porta padrão do Postgres
+        'HOST': config('DB_HOST', default='localhost'),
+        'PORT': config('DB_PORT', default='5432'),
     }
 }
 
