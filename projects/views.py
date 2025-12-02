@@ -9,6 +9,7 @@ from django.db import models # Para usar models.Max
 from django.urls import reverse
 import json
 import datetime
+from django.utils import timezone
 import secrets
 from django.contrib.auth import views as auth_views
 from .models import Task, CalendarEvent, Project, Client, SocialPost, SocialAccount
@@ -32,34 +33,35 @@ OPERATIONAL_STAGES = [
 
 @login_required
 def kanban_view(request, kanban_type='general'):
+    # Define as colunas baseadas no tipo
     if kanban_type == 'operational':
-        stages = OPERATIONAL_STAGES
-        template_name = 'projects/operational_kanban_board.html'
-        kanban_title = 'Kanban Operacional'
+        stages = [
+            ('briefing', 'Briefing'),
+            ('copy', 'Copy'),
+            ('design', 'Design'),
+            ('internal_approval', 'Aprovação Interna'),
+            ('client_approval', 'Aprovação Cliente'),
+            ('scheduling', 'Agendamento'),
+        ]
+        template = 'projects/operational_kanban.html'
     else:
-        stages = GENERAL_STAGES
-        template_name = 'projects/kanban_board.html'
-        kanban_title = 'Kanban Geral'
-        
+        stages = [('todo', 'A Fazer'), ('doing', 'Em Andamento'), ('done', 'Concluído')]
+        template = 'projects/general_kanban.html'
+
+    # Busca tarefas APENAS desse tipo
     tasks = Task.objects.filter(kanban_type=kanban_type).order_by('order')
     
+    # Organiza para o template
     kanban_data = {}
-    for stage_value, stage_label in stages:
-        kanban_data[stage_value] = [
-            task.to_dict()
-            for task in tasks.filter(status=stage_value)
-        ]
+    for key, label in stages:
+        kanban_data[key] = tasks.filter(status=key)
 
     context = {
-        'kanban_data': json.dumps(kanban_data),
         'stages': stages,
-        'projects': Project.objects.all(),
-        'agency_users': request.tenant.users.all(), # Usuários para atribuição
-        'kanban_type': kanban_type,
-        'kanban_title': kanban_title,
+        'kanban_data': kanban_data,
+        'kanban_type': kanban_type
     }
-    return render(request, template_name, context)
-
+    return render(request, template, context)
 
 # ATUALIZE KanbanUpdateTask para usar os novos status
 @method_decorator(csrf_exempt, name='dispatch')
@@ -80,12 +82,17 @@ def dashboard(request):
     project_count = Project.objects.count()
     pending_tasks_count = Task.objects.filter(status__in=['todo', 'in_progress']).count()
     completed_tasks_count = Task.objects.filter(status='done').count()
-
-    # --- NOVO CÁLCULO DE PROGRESSE ---
     total_tasks = pending_tasks_count + completed_tasks_count
     completion_percent = (completed_tasks_count / total_tasks * 100) if total_tasks else 0
     completion_percent = round(completion_percent)
-    # -----------------------------------
+    status_counts = Task.objects.values('status').annotate(count=models.Count('id'))
+    chart_status_data = {item['status']: item['count'] for item in status_counts}
+
+    posts_metrics = {
+        'scheduled': SocialPost.objects.filter(scheduled_for__gte=timezone.now()).count(),
+        'published': SocialPost.objects.filter(scheduled_for__lt=timezone.now()).count(),
+        'pending_approval': Task.objects.filter(status='client_approval').count()
+    }
 
     # 2. Widget de Eventos Futuros (Assumindo que está funcionando)
     upcoming_events = CalendarEvent.objects.filter(start_date__gte=today).order_by('start_date')[:5]
@@ -99,6 +106,8 @@ def dashboard(request):
         'completion_percent': completion_percent,
         'upcoming_events': upcoming_events,
         'recent_tasks': recent_tasks,
+        'chart_status_data': json.dumps(chart_status_data),
+        'posts_metrics': json.dumps(posts_metrics),
     }
 
     return render(request, 'projects/dashboard.html', context)
@@ -168,14 +177,16 @@ class AddTaskAPI(View):
             data = json.loads(request.body)
             title = data.get('title')
             description = data.get('description')
-            project_id = data.get('project') # ID do projeto
+            project_id = data.get('project') # Pode vir vazio agora
             assigned_to_id = data.get('assigned_to')
+            kanban_type = data.get('kanban_type', 'general') # Novo campo
 
-            if not title or not project_id:
-                return JsonResponse({'status': 'error', 'message': 'Título e Projeto são obrigatórios.'}, status=400)
+            if not title:
+                return JsonResponse({'status': 'error', 'message': 'Título é obrigatório.'}, status=400)
 
-            project = get_object_or_404(Project, id=project_id)
-
+            project = None
+            if project_id:
+                project = get_object_or_404(Project, id=project_id)
             assigned_user = None
             if assigned_to_id:
                 # Busca o usuário no schema PÚBLICO
@@ -184,16 +195,20 @@ class AddTaskAPI(View):
                 except CustomUser.DoesNotExist:
                     return JsonResponse({'status': 'error', 'message': 'Usuário atribuído não encontrado.'}, status=404)
 
-            max_order = Task.objects.filter(status='todo').aggregate(models.Max('order'))['order__max']
+            max_order = Task.objects.filter(
+                kanban_type=kanban_type, # Filtra pelo tipo correto!
+                status='todo' if kanban_type == 'general' else 'briefing'
+            ).aggregate(models.Max('order'))['order__max']
             new_order = (max_order if max_order is not None else -1) + 1
 
             task = Task.objects.create(
-                project=project,
+                kanban_type=kanban_type, # Salva o tipo
+                status='todo' if kanban_type == 'general' else 'briefing',
+                project=project, # Pode ser None se seu Model permitir
                 title=title,
                 description=description,
-                status='todo', # Nova tarefa começa em 'A Fazer'
                 order=new_order,
-                created_by=request.user, # Liga ao usuário logado
+                created_by=request.user,
                 assigned_to=assigned_user
             )
 
@@ -208,7 +223,8 @@ class AddTaskAPI(View):
                 'status': task.status,
                 'order': task.order,
                 'assigned_to_username': task.assigned_to.username if task.assigned_to else None,
-                'assigned_to_initials': task.assigned_to.username[0].upper() if task.assigned_to else '?'
+                'assigned_to_initials': task.assigned_to.username[0].upper() if task.assigned_to else '?',
+                **task.to_dict()
             }, status=201)
 
         except Exception as e:
@@ -451,25 +467,34 @@ class AddProjectAPI(View):
                 'errors': form.errors
             }, status=400)
     pass
+# projects/views.py
+
 @login_required
 def social_dashboard(request):
     """
     Painel principal de gestão de redes sociais.
     """
-    # Busca as contas conectadas desta agência (tenant)
+    # Busca as contas conectadas
     connected_accounts = SocialAccount.objects.all()
+    clients = Client.objects.all()
     
-    # Busca os posts futuros e passados
+    # Pega a hora atual para saber o que é passado e futuro
+    now = timezone.now()
+    
+    # CORREÇÃO: Usamos 'approval_status' e data para filtrar
+    
+    # 1. Posts Agendados (Aprovados e Data no Futuro)
     scheduled_posts = SocialPost.objects.filter(
-        status='scheduled'
+        approval_status='approved_to_schedule',
+        scheduled_for__gte=now
     ).order_by('scheduled_for')
     
+    # 2. Posts Publicados (Aprovados e Data no Passado)
     published_posts = SocialPost.objects.filter(
-        status='published'
+        approval_status='approved_to_schedule',
+        scheduled_for__lt=now
     ).order_by('-scheduled_for')
     
-    clients = Client.objects.all() 
-
     context = {
         'connected_accounts': connected_accounts,
         'scheduled_posts': scheduled_posts,
@@ -485,55 +510,77 @@ class CreateSocialPostAPI(View):
     @method_decorator(login_required)
     def post(self, request, *args, **kwargs):
         try:
-            # Em requisições com 'enctype=multipart/form-data' (file upload),
-            # os dados de texto estão em request.POST e os arquivos em request.FILES.
+            
             data = request.POST
             content = data.get('content')
             scheduled_at_str = data.get('scheduled_for')
-            
-            # getlist é necessário para pegar múltiplos valores de checkboxes
-            account_ids = data.getlist('accounts') 
+            account_ids = data.getlist('accounts')
             image_file = request.FILES.get('image')
             client_id = data.get('client')
-
-            if not content or not scheduled_at_str or not account_ids:
-                return JsonResponse({'status': 'error', 'message': 'Conteúdo, Agendamento e Contas de destino são obrigatórios.'}, status=400)
             
-            # Converte a string de data/hora para objeto datetime (formato esperado do input datetime-local)
-            try:
-                # O formato padrão é YYYY-MM-DDTHH:MM
-                scheduled_for = datetime.strptime(scheduled_at_str, '%Y-%m-%dT%H:%M')
-            except ValueError:
-                return JsonResponse({'status': 'error', 'message': 'Formato de data e hora inválido.'}, status=400)
+            if not content or not scheduled_at_str or not account_ids or not client_id:
+                 return JsonResponse({'status': 'error', 'message': 'Campos obrigatórios faltando.'}, status=400)
+
             client = get_object_or_404(Client, pk=client_id)
+            
+            try:
+                scheduled_for = datetime.datetime.strptime(scheduled_at_str, '%Y-%m-%dT%H:%M')
+            except ValueError:
+                return JsonResponse({'status': 'error', 'message': 'Data inválida.'}, status=400)
             # O status inicial é 'scheduled' (agendado)
             post = SocialPost.objects.create(
                 content=content,
                 scheduled_for=scheduled_for,
                 image=image_file,
-                status='scheduled', 
+                approval_status='draft',
                 created_by=request.user,
                 client=client
             )
 
-            # Adiciona as contas de destino (M2M)
-            accounts = SocialAccount.objects.filter(id__in=account_ids)
-            post.accounts.set(accounts)
+            if account_ids:
+                accounts = SocialAccount.objects.filter(id__in=account_ids)
+                from .models import SocialPostDestination
+                for acc in accounts:
+                    # Tenta adivinhar o formato baseado na plataforma
+                    fmt = 'feed'
+                    if acc.platform in ['instagram', 'tiktok', 'youtube']:
+                        # Lógica simples: se for tiktok é vertical, etc.
+                        # (Podemos melhorar isso depois)
+                        pass 
+                    
+                    SocialPostDestination.objects.create(
+                        post=post, 
+                        account=acc, 
+                        format_type=fmt
+                    )
 
-            # Prepara a resposta (dados mínimos para atualização do frontend)
-            accounts_list = [acc.get_platform_display() for acc in accounts]
+                # 3. CRIAÇÃO AUTOMÁTICA DA TAREFA NO KANBAN OPERACIONAL
+                # Calcula a ordem
+                max_order = Task.objects.filter(
+                    kanban_type='operational', 
+                    status='briefing'
+                ).aggregate(models.Max('order'))['order__max']
+                new_order = (max_order if max_order is not None else -1) + 1
 
-            return JsonResponse({
-                'status': 'success',
-                'id': post.id,
-                'content_snippet': post.content[:50],
-                'scheduled_for': post.scheduled_for.strftime('%d/%m/%Y %H:%M'),
-                'accounts': accounts_list,
-            }, status=201)
+                Task.objects.create(
+                    kanban_type='operational',
+                    status='briefing', # Entra na primeira coluna do fluxo
+                    title=f"Post: {client.name} - {scheduled_for.strftime('%d/%m')}", # Título automático
+                    description=content[:100], # Usa o começo do post como descrição
+                    social_post=post, # VINCULA AO POST
+                    project=None, # (Opcional: se o cliente tiver um projeto padrão, poderia vincular)
+                    created_by=request.user,
+                    order=new_order
+                )
+
+                return JsonResponse({
+                    'status': 'success',
+                    'message': 'Post criado e tarefa enviada para o Kanban!',
+                    'id': post.id
+                }, status=201)
 
         except Exception as e:
-            # Em um app real, logaríamos o erro e mostraríamos uma mensagem genérica.
-            return JsonResponse({'status': 'error', 'message': f'Erro interno: {str(e)}'}, status=400)
+            return JsonResponse({'status': 'error', 'message': f'Erro interno: {str(e)}'}, status=500)
     pass
 @login_required
 def send_approval_link(request, post_id):
@@ -575,22 +622,14 @@ pass
 
 # Requer o token de aprovação para acesso
 def external_approval_view(request, token):
-    """
-    A View pública que o cliente/revisor acessa para visualizar e aprovar/reprovar.
-    """
+    # Busca o post pelo token seguro
     post = get_object_or_404(SocialPost, approval_token=token)
     
-    # Obter os destinos da postagem para o preview
-    destinations = post.socialpostdestination_set.all()
-
     context = {
         'post': post,
-        'destinations': destinations,
-        'kanban_status': post.task_link.first().status if post.task_link.exists() else 'N/A'
+        # Passamos a URL da mídia para o JS usar no Canvas
+        'media_url': post.media_file.url if post.media_file else '',
     }
-    
-    # NOTA: O template 'projects/external_approval.html' precisa ser o mock-up de rede social!
-    # Ele deve conter: a) Preview do post/imagem b) Botões de Aprovar/Reprovar Copy/Design c) Modal de feedback
     return render(request, 'projects/external_approval.html', context)
 pass
 
@@ -606,3 +645,151 @@ def approval_action(request):
     
     return JsonResponse({'status': 'error', 'message': 'Método inválido.'}, status=400)
 pass
+
+@method_decorator(csrf_exempt, name='dispatch')
+class ProcessApprovalAction(View):
+    def post(self, request, *args, **kwargs):
+        try:
+            data = json.loads(request.body)
+            token = data.get('token')
+            action = data.get('action') # 'approve', 'reject_copy', 'reject_design'
+            feedback = data.get('feedback', '')
+            image_data = data.get('image_data') # Base64 da imagem rabiscada
+
+            post = get_object_or_404(SocialPost, approval_token=token)
+            
+            # Encontra a tarefa ligada a este post no Kanban
+            task = post.task # Usando o related_name 'task' do OneToOneField
+
+            if action == 'approve':
+                # 1. Cliente Aprovou
+                post.approval_status = 'approved_to_schedule'
+                # Move Kanban para "Agendamento"
+                if task:
+                    task.status = 'scheduling'
+                    task.save()
+
+            elif action == 'reject_copy':
+                # 2. Cliente Reprovou Texto
+                post.approval_status = 'copy_review'
+                post.feedback_text = feedback
+                # Move Kanban de volta para "Copy"
+                if task:
+                    task.status = 'copy'
+                    task.save()
+
+            elif action == 'reject_design':
+                # 3. Cliente Reprovou Design (Com Rabisco)
+                post.approval_status = 'design_review'
+                
+                # Salva o texto do feedback
+                post.feedback_text = feedback # Ou crie um campo feedback_design separado
+                
+                # Salva a imagem rabiscada (Converte Base64 para Arquivo)
+                if image_data:
+                    format, imgstr = image_data.split(';base64,') 
+                    ext = format.split('/')[-1] 
+                    file_name = f"feedback_design_{post.id}.{ext}"
+                    data = ContentFile(base64.b64decode(imgstr), name=file_name)
+                    
+                    # Salva no campo de feedback (se for FileField) ou texto
+                    post.feedback_image_markup = image_data # Salvando como texto base64 por enquanto
+                
+                # Move Kanban de volta para "Design"
+                if task:
+                    task.status = 'design'
+                    task.save()
+
+            post.save()
+            
+            return JsonResponse({'status': 'success', 'message': 'Feedback registrado e equipe notificada!'})
+
+        except Exception as e:
+            return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
+
+@method_decorator(csrf_exempt, name='dispatch')
+class AddOperationalTaskAPI(View):
+    """
+    Cria uma tarefa operacional (Briefing) e o objeto SocialPost associado.
+    Aceita uploads de arquivos (imagem de referência).
+    """
+    @method_decorator(login_required)
+    def post(self, request, *args, **kwargs):
+        try:
+            # Como o form tem enctype="multipart/form-data", usamos request.POST e request.FILES
+            title = request.POST.get('title')
+            description = request.POST.get('description', '')
+            project_id = request.POST.get('project')
+            assigned_to_id = request.POST.get('assigned_to')
+            
+            # Pega o arquivo de referência (se houver)
+            reference_image = request.FILES.get('reference_image')
+
+            # Validação Básica
+            if not title or not project_id:
+                return JsonResponse({'status': 'error', 'message': 'Título e Projeto são obrigatórios.'}, status=400)
+
+            # Busca o Projeto e o Cliente
+            project = get_object_or_404(Project, id=project_id)
+            if not project.client:
+                return JsonResponse({'status': 'error', 'message': 'Este projeto não tem um cliente vinculado.'}, status=400)
+
+            # 1. CRIAR O SOCIAL POST (O "Conteúdo")
+            # Ele nasce ligado ao Cliente do projeto.
+            # A imagem de referência vai para o 'media_file' por enquanto.
+            social_post = SocialPost.objects.create(
+                client=project.client,
+                caption=description, # Usamos o briefing como legenda inicial
+                media_file=reference_image, 
+                created_by=request.user,
+                approval_status='draft' # Status interno do post
+            )
+
+            # 2. CALCULAR A ORDEM NO KANBAN
+            # Busca a maior ordem na coluna 'briefing' do tipo 'operational'
+            max_order = Task.objects.filter(
+                kanban_type='operational', 
+                status='briefing'
+            ).aggregate(models.Max('order'))['order__max']
+            
+            new_order = (max_order if max_order is not None else -1) + 1
+
+            # 3. CRIAR A TAREFA (O "Card" do Kanban)
+            task = Task.objects.create(
+                kanban_type='operational',
+                status='briefing', # Começa sempre na primeira coluna
+                project=project,
+                social_post=social_post, # LIGAÇÃO CRUCIAL: Tarefa -> Post
+                title=title,
+                description=description,
+                order=new_order,
+                created_by=request.user,
+                assigned_to_id=assigned_to_id if assigned_to_id else None
+            )
+
+            # 4. RETORNO PARA O JAVASCRIPT
+            return JsonResponse({
+                'status': 'success',
+                'message': 'Demanda iniciada com sucesso!',
+                'task': task.to_dict() # Retorna os dados para desenhar o card na hora
+            }, status=201)
+
+        except Exception as e:
+            # Log do erro para debug (opcional: print(e))
+            return JsonResponse({'status': 'error', 'message': f"Erro interno: {str(e)}"}, status=500)
+
+# projects/views.py
+
+@login_required
+def create_post_studio_view(request):
+    """
+    Renderiza a tela cheia de criação de posts (O Estúdio).
+    """
+    clients = Client.objects.all()
+    connected_accounts = SocialAccount.objects.all()
+    
+    context = {
+        'clients': clients,
+        'connected_accounts': connected_accounts
+    }
+    return render(request, 'projects/create_post_studio.html', context)

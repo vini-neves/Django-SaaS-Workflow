@@ -50,4 +50,24 @@ urlpatterns = [
     path('api/social/send-approval/<int:post_id>/', views.send_approval_link, name='send_approval_link'),
     path('approval/<str:token>/', views.external_approval_view, name='external_approval_view'), 
     path('api/approval/action/', views.approval_action, name='approval_action'),
+
+    # Kanban Unificado (Geral e Operacional)
+    path('kanban/<str:kanban_type>/', views.kanban_view, name='kanban_view'),
+    
+    # API para Mover Cards (Drag & Drop)
+    path('api/task/update-status/', views.KanbanUpdateTask.as_view(), name='kanban_update_task'),
+
+    # APIs de Criação
+    path('api/task/add-operational/', views.AddOperationalTaskAPI.as_view(), name='add_operational_task'),
+
+    # --- FLUXO DE APROVAÇÃO EXTERNA ---
+    # 1. Gerar link (Uso interno)
+    path('api/social/generate-link/<int:post_id>/', views.send_approval_link, name='send_approval_link'),
+    
+    # 2. Tela do Cliente (Pública)
+    path('approval/<str:token>/', views.external_approval_view, name='external_approval_view'),
+    
+    # 3. Ação do Cliente (Aprovar/Reprovar via API)
+    path('api/approval/action/', views.ProcessApprovalAction.as_view(), name='process_approval_action'),
+    path('social/create/', views.create_post_studio_view, name='create_post_studio'),
 ]

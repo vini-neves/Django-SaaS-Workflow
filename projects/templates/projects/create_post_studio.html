@@ -1,0 +1,230 @@
+{% extends "projects/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/social_previews.css' %}">
+    <style>
+        /* Layout de 2 colunas */
+        .studio-wrapper {
+            display: grid;
+            grid-template-columns: 1fr 1fr; /* 50% Config, 50% Preview */
+            gap: 30px;
+            height: calc(100vh - 80px); /* Ocupa a tela toda */
+        }
+        .config-panel {
+            background: white; padding: 30px; overflow-y: auto;
+            border-right: 1px solid #ddd;
+        }
+        .preview-panel {
+            background: #f4f6f8; padding: 30px;
+            display: flex; flex-direction: column; align-items: center; justify-content: center;
+        }
+        
+        /* Tabs para selecionar qual preview ver */
+        .preview-tabs {
+            display: flex; gap: 10px; margin-bottom: 20px;
+        }
+        .preview-tab {
+            padding: 8px 16px; background: white; border: 1px solid #ddd; border-radius: 20px;
+            cursor: pointer; font-size: 0.9em;
+        }
+        .preview-tab.active {
+            background: var(--primary-color); color: white; border-color: var(--primary-color);
+        }
+    </style>
+{% endblock %}
+
+{% block title %}Novo Agendamento{% endblock %}
+
+{% block content %}
+<div class="studio-wrapper">
+
+    <div class="config-panel">
+        <h2>Criar Publicação</h2>
+        <form id="create-post-form" enctype="multipart/form-data">
+            {% csrf_token %}
+            
+            <div class="form-group">
+                <label>Cliente:</label>
+                <select id="post-client" name="client" class="form-input" required>
+                    <option value="" disabled selected>Selecione...</option>
+                    {% for client in clients %}
+                        <option value="{{ client.id }}" data-logo="{{ client.logo.url|default:'' }}">{{ client.name }}</option>
+                    {% endfor %}
+                </select>
+            </div>
+
+            <div class="form-group">
+                <label>Onde publicar?</label>
+                <div style="display: flex; flex-wrap: wrap; gap: 10px;">
+                    {% for account in connected_accounts %}
+                        <label class="account-selector">
+                            <input type="checkbox" name="accounts" value="{{ account.id }}" 
+                                   data-platform="{{ account.platform }}" 
+                                   onchange="updatePreviewTabs()">
+                            <i data-feather="{{ account.platform }}"></i> {{ account.account_name }}
+                        </label>
+                    {% endfor %}
+                </div>
+            </div>
+
+            <div class="form-group">
+                <label>Mídia (Imagem/Vídeo):</label>
+                <input type="file" id="input-media" name="image" class="form-input" accept="image/*,video/*" onchange="updatePreviewMedia()">
+            </div>
+
+            <div class="form-group">
+                <label>Legenda:</label>
+                <textarea id="input-caption" name="content" class="form-input" rows="6" oninput="updatePreviewText()" placeholder="Escreva sua legenda aqui..."></textarea>
+            </div>
+
+            <div class="form-group">
+                <label>Data e Hora:</label>
+                <input type="datetime-local" name="scheduled_for" class="form-input" required>
+            </div>
+
+            <div class="form-actions">
+                <button type="submit" class="form-button">Agendar Publicação</button>
+            </div>
+        </form>
+    </div>
+
+    <div class="preview-panel">
+        
+        <div class="preview-tabs" id="preview-tabs-container">
+            <span class="preview-tab active" onclick="switchPreview('instagram_feed')">Instagram Feed</span>
+            </div>
+
+        <div id="mockup-instagram_feed" class="device-mockup preview-instagram-feed">
+            <div class="header">
+                <img src="" class="avatar client-avatar">
+                <span class="username client-name">Nome do Cliente</span>
+            </div>
+            <div class="media-area">
+                <img src="" id="preview-img-feed" style="display:none;">
+                <video src="" id="preview-video-feed" style="display:none;" controls></video>
+                <div id="placeholder-media" style="color:#ccc;">Sem Mídia</div>
+            </div>
+            <div class="actions">
+                <i data-feather="heart"></i> <i data-feather="message-circle"></i> <i data-feather="send"></i>
+            </div>
+            <div class="caption-area">
+                <span class="caption-username client-name">Nome do Cliente</span>
+                <span class="caption-text">Sua legenda aparecerá aqui...</span>
+            </div>
+        </div>
+
+        <div id="mockup-vertical" class="device-mockup preview-vertical" style="display:none;">
+            <div class="media-area">
+                <img src="" id="preview-img-story" style="display:none;">
+                <video src="" id="preview-video-story" style="display:none;"></video>
+            </div>
+            <div class="header">
+                <img src="" class="avatar client-avatar">
+                <span class="username client-name" style="font-size:12px;">Nome do Cliente</span>
+            </div>
+            <div class="overlay">
+                </div>
+        </div>
+
+        <div id="mockup-linkedin" class="device-mockup preview-linkedin-feed" style="display:none;">
+            <div class="header">
+                <img src="" class="avatar client-avatar">
+                <div class="user-info">
+                    <h4 class="client-name">Nome do Cliente</h4>
+                    <span>12.456 seguidores • 2h • 🌐</span>
+                </div>
+            </div>
+            <div class="caption-area">
+                <span class="caption-text">Sua legenda aparecerá aqui...</span>
+            </div>
+            <div class="media-area">
+                <img src="" id="preview-img-linkedin">
+            </div>
+        </div>
+
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const CSRF_TOKEN = "{{ csrf_token }}";
+    const API_URL = "{% url 'create_social_post_api' %}";
+
+    // --- Atualização em Tempo Real ---
+
+    function updatePreviewText() {
+        const text = document.getElementById('input-caption').value;
+        // Atualiza em TODOS os lugares que usam a classe .caption-text
+        document.querySelectorAll('.caption-text').forEach(el => el.innerText = text || "Sua legenda...");
+    }
+
+    function updatePreviewMedia() {
+        const input = document.getElementById('input-media');
+        const file = input.files[0];
+        
+        if (file) {
+            const objectUrl = URL.createObjectURL(file);
+            
+            // Lógica para Imagem vs Vídeo
+            if (file.type.startsWith('image/')) {
+                document.querySelectorAll('video').forEach(v => v.style.display = 'none');
+                document.querySelectorAll('img[id^="preview-img"]').forEach(img => {
+                    img.src = objectUrl;
+                    img.style.display = 'block';
+                });
+                document.getElementById('placeholder-media').style.display = 'none';
+            } 
+            else if (file.type.startsWith('video/')) {
+                document.querySelectorAll('img[id^="preview-img"]').forEach(img => img.style.display = 'none');
+                document.querySelectorAll('video').forEach(video => {
+                    video.src = objectUrl;
+                    video.style.display = 'block';
+                });
+                document.getElementById('placeholder-media').style.display = 'none';
+            }
+        }
+    }
+
+    // Atualiza nome e logo do cliente quando selecionado
+    document.getElementById('post-client').addEventListener('change', function() {
+        const selectedOption = this.options[this.selectedIndex];
+        const name = selectedOption.text;
+        // const logo = selectedOption.dataset.logo; // Se você tiver o logo URL no data attribute
+
+        document.querySelectorAll('.client-name').forEach(el => el.innerText = name);
+        // document.querySelectorAll('.client-avatar').forEach(img => img.src = logo);
+    });
+
+    // --- Lógica de Abas e Troca de Visualização ---
+
+    function switchPreview(type) {
+        // Esconde todos
+        document.getElementById('mockup-instagram_feed').style.display = 'none';
+        document.getElementById('mockup-vertical').style.display = 'none';
+        document.getElementById('mockup-linkedin').style.display = 'none';
+
+        // Remove active das abas
+        document.querySelectorAll('.preview-tab').forEach(tab => tab.classList.remove('active'));
+        event.target.classList.add('active');
+
+        // Mostra o certo
+        if (type === 'instagram_feed' || type === 'facebook_feed') {
+            document.getElementById('mockup-instagram_feed').style.display = 'block';
+        } else if (type.includes('story') || type.includes('reel') || type.includes('tiktok')) {
+            document.getElementById('mockup-vertical').style.display = 'block';
+        } else if (type === 'linkedin') {
+            document.getElementById('mockup-linkedin').style.display = 'block';
+        }
+    }
+
+    // Função para atualizar as abas baseada nos checkboxes selecionados (Lógica simplificada)
+    function updatePreviewTabs() {
+        // Aqui você pode adicionar lógica para mostrar/esconder abas baseado no que o usuário selecionou
+    }
+
+    // Inicializa ícones
+    feather.replace();
+</script>
+{% endblock %}

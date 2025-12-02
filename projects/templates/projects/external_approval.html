@@ -1,0 +1,94 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Aprovação de Post - {{ post.client.name }}</title>
+    <link rel="stylesheet" href="{% static 'css/social_previews.css' %}">
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body>
+
+<div class="approval-container">
+    
+    <div class="preview-area">
+        <div class="device-mockup">
+            <div class="insta-header">
+                <img src="{{ post.client.logo.url }}" class="avatar">
+                <span>{{ post.client.name }}</span>
+            </div>
+            
+            <div class="canvas-wrapper">
+                <canvas id="c" width="400" height="400"></canvas>
+            </div>
+            
+            <div class="insta-actions">❤️ 💬 🚀</div>
+            
+            <div class="insta-caption">
+                <strong>{{ post.client.name }}</strong> {{ post.caption }}
+            </div>
+        </div>
+    </div>
+
+    <div class="actions-area">
+        <h1>Aprovação de Conteúdo</h1>
+        
+        <div class="button-group">
+            <button onclick="approvePost()" class="btn-approve">✅ APROVAR TUDO</button>
+        </div>
+
+        <hr>
+
+        <h3>Precisa de ajustes?</h3>
+        
+        <button onclick="rejectCopy()" class="btn-reject">❌ Reprovar Texto (Copy)</button>
+        
+        <button onclick="enableDrawingMode()" class="btn-reject">🎨 Rabiscar na Imagem (Design)</button>
+        
+        <div id="drawing-controls" style="display:none;">
+            <p>Desenhe na imagem ao lado para indicar as alterações.</p>
+            <button onclick="saveRejectDesign()" class="btn-save-reject">Enviar Reprova de Design</button>
+        </div>
+    </div>
+
+</div>
+
+<script>
+    // Inicializa o Canvas com a imagem do post
+    const canvas = new fabric.Canvas('c');
+    const bgUrl = "{{ post.media_file.url }}";
+
+    fabric.Image.fromURL(bgUrl, function(img) {
+        // Ajusta imagem ao canvas
+        img.scaleToWidth(400);
+        canvas.setBackgroundImage(img, canvas.renderAll.bind(canvas));
+        canvas.setDimensions({width: 400, height: img.getScaledHeight()});
+    });
+
+    // Função para ativar modo de desenho (Rabiscar)
+    function enableDrawingMode() {
+        canvas.isDrawingMode = true;
+        canvas.freeDrawingBrush.width = 5;
+        canvas.freeDrawingBrush.color = "red";
+        document.getElementById('drawing-controls').style.display = 'block';
+    }
+
+    // Função para salvar a reprova de design
+    function saveRejectDesign() {
+        // Pega a imagem com os rabiscos em Base64
+        const dataURL = canvas.toDataURL({ format: 'png' });
+        
+        // Envia para o Django via API
+        fetch('/api/approval/reject-design/', {
+            method: 'POST',
+            body: JSON.stringify({
+                token: "{{ post.approval_token }}",
+                image_data: dataURL,
+                feedback: "Ajustes marcados na imagem."
+            })
+        }).then(res => {
+            if(res.ok) alert("Feedback enviado para a equipe de Design!");
+        });
+    }
+</script>
+
+</body>
+</html>

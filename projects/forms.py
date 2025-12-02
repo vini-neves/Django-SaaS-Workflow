@@ -27,7 +27,8 @@ class ClientForm(forms.ModelForm):
             'nome_representante', 
             'celular_representante', 
             'email_representante',
-            'anexo_contrato'
+            'anexo_contrato',
+            'manual_marca'
         ]
         
         # Adiciona classes CSS e placeholders para os inputs
@@ -38,6 +39,7 @@ class ClientForm(forms.ModelForm):
             'celular_representante': forms.TextInput(attrs={'class': 'form-input', 'placeholder': '(XX) 9XXXX-XXXX'}),
             'email_representante': forms.EmailInput(attrs={'class': 'form-input', 'placeholder': 'contato@cliente.com'}),
             'anexo_contrato': forms.FileInput(attrs={'class': 'form-input'}),
+            'manual_marca': forms.FileInput(attrs={'class': 'form-input'}),
         }
 
 

@@ -1,32 +1,33 @@
+{# projects/templates/projects/general_kanban.html #}
 {% extends "projects/base.html" %}
 {% load static %}
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
     <style>
-        /* Ajuste de largura para 6 colunas (Briefing até Agendamento) */
-        .kanban-column {
-            min-width: 200px; 
-            flex: 1; /* Permite que mais colunas caibam na tela */
-        }
+        /* Cores específicas para o Kanban Geral */
+        [data-status="todo"] { border-top: 4px solid #999; }
+        [data-status="in_progress"] { border-top: 4px solid #3498db; }
+        [data-status="done"] { border-top: 4px solid #2ecc71; }
     </style>
 {% endblock %}
 
-{% block title %}Kanban Operacional{% endblock %}
+{% block title %}Kanban Geral{% endblock %}
 
 {% block content %}
     
     <div class="kanban-header">
         <div>
-            <h1>Kanban Operacional</h1>
-            <p>Fluxo de trabalho de produção e aprovação de conteúdo.</p>
+            <h1>Kanban Geral</h1>
+            <p>Tarefas administrativas e rotinas da agência.</p>
         </div>
         <div>
-            <a href="{% url 'kanban_board' %}" class="toggle-button" style="text-decoration: none;">
-                <i data-feather="repeat"></i> <span>Mudar para Kanban Geral</span>
+            <a href="{% url 'kanban_view' 'operational' %}" class="toggle-button" style="text-decoration: none; margin-right: 10px;">
+                <i data-feather="repeat"></i> <span>Ir para Fluxo Operacional</span>
             </a>
+            
             <button id="add-task-btn" class="add-task-button">
-                <i data-feather="plus"></i> Adicionar Postagem
+                <i data-feather="plus"></i> Nova Tarefa Geral
             </button>
         </div>
     </div>
@@ -40,40 +41,43 @@
                 <span class="task-count">0</span>
             </div>
             <div class="column-cards">
-                {# Cards serão inseridos aqui via JS #}
+                {# Cards serão inseridos aqui via JS (kanban.js) baseado no JSON #}
             </div>
         </div>
         {% endfor %}
 
     </div>
 
-    {# --- MODAL DE ADICIONAR TAREFA (OPERACIONAL) --- #}
+    {# --- MODAL DE ADICIONAR TAREFA (GERAL) --- #}
     <div id="add-task-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" data-modal-id="add-task-modal">&times;</span>
-            <h2>Criar Tarefa de Postagem</h2>
+            <h2>Nova Tarefa Geral</h2>
             <form id="add-task-form">
                 {% csrf_token %}
                 
-                <input type="hidden" name="kanban_type" value="operational"> 
+                <input type="hidden" name="kanban_type" value="general"> 
 
                 <div class="form-group">
-                    <label for="task-title">Título (Nome do Post):</label>
-                    <input type="text" id="task-title" name="title" required class="form-input">
+                    <label for="task-title">Título:</label>
+                    <input type="text" id="task-title" name="title" required class="form-input" placeholder="Ex: Pagar conta de luz">
                 </div>
+                
                 <div class="form-group">
-                    <label for="task-description">Objetivo/Briefing:</label>
+                    <label for="task-description">Descrição:</label>
                     <textarea id="task-description" name="description" class="form-input" rows="3"></textarea>
                 </div>
+                
                 <div class="form-group">
-                    <label for="task-project">Projeto:</label>
-                    <select id="task-project" name="project" class="form-input" required>
-                        <option value="" disabled selected>Selecione um projeto...</option>
+                    <label for="task-project">Projeto (Opcional):</label>
+                    <select id="task-project" name="project" class="form-input">
+                        <option value="" selected>Sem projeto vinculado</option>
                         {% for project in projects %}
                             <option value="{{ project.id }}">{{ project.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                
                 <div class="form-group">
                     <label for="task-assigned-to">Atribuir a:</label>
                     <select id="task-assigned-to" name="assigned_to" class="form-input">
@@ -83,12 +87,13 @@
                         {% endfor %}
                     </select>
                 </div>
-                <button type="submit" class="modal-button" style="background-color: var(--primary-color);">Criar Postagem</button>
+                
+                <button type="submit" class="modal-button" style="background-color: var(--primary-color);">Criar Tarefa</button>
             </form>
         </div>
     </div>
     
-    {# --- MODAL DE DETALHES DA TAREFA (Reutilizado) --- #}
+    {# --- MODAL DE DETALHES (Compartilhado) --- #}
     <div id="task-details-modal" class="modal">
         <div class="modal-content">
             <span class="close-button" data-modal-id="task-details-modal">&times;</span>
@@ -98,11 +103,16 @@
     </div>
 
     <script>
-        // Dados JSON das tarefas passados pela view Django
+        // Dados iniciais vindos da View
         const KANBAN_INITIAL_DATA = {{ kanban_data|safe }};
+        
+        // URLs e Tokens
         const CSRF_TOKEN = "{{ csrf_token }}";
         const KANBAN_UPDATE_URL = "{% url 'kanban_update_task' %}";
-        const ADD_TASK_API_URL = "{% url 'add_task_api' %}";
+        
+        // Note: Usamos a mesma API de Add Task, ela vai ler o input hidden 'kanban_type'
+        const ADD_TASK_API_URL = "{% url 'add_task_api' %}"; 
+        
         const GET_TASK_DETAILS_URL_BASE = "{% url 'get_task_details_api' 0 %}".replace('0', '');
         const DELETE_TASK_URL_BASE = "{% url 'delete_task_api' 0 %}".replace('0', '');
     </script>

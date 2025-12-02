@@ -3,7 +3,7 @@
 from django.contrib import admin
 from .models import Project, Task, Client, CalendarEvent, SocialAccount, SocialPost, SocialPostDestination
 
-# --- ADMIN INLINE PARA RELACIONAMENTOS ---
+# --- ADMIN INLINE ---
 class SocialPostDestinationInline(admin.TabularInline):
     model = SocialPostDestination
     extra = 1
@@ -24,6 +24,7 @@ class ProjectAdmin(admin.ModelAdmin):
 
 @admin.register(Task)
 class TaskAdmin(admin.ModelAdmin):
+    # 'updated_at' agora existe, então podemos usá-lo
     list_display = ('title', 'project', 'status', 'kanban_type', 'assigned_to', 'updated_at')
     list_filter = ('status', 'kanban_type', 'assigned_to', 'project')
     search_fields = ('title', 'description')
@@ -42,12 +43,14 @@ class SocialAccountAdmin(admin.ModelAdmin):
 
 @admin.register(SocialPost)
 class SocialPostAdmin(admin.ModelAdmin):
-    list_display = ('content', 'client', 'approval_status', 'scheduled_for', 'status')
-    list_filter = ('approval_status', 'status', 'client')
-    search_fields = ('content',)
-    inlines = [SocialPostDestinationInline] # Permite adicionar destinos na mesma página
+    # CORREÇÃO: Usamos 'caption' em vez de 'content' e 'approval_status' em vez de 'status'
+    list_display = ('caption', 'client', 'approval_status', 'scheduled_for')
+    list_filter = ('approval_status', 'client')
+    search_fields = ('caption',)
+    inlines = [SocialPostDestinationInline]
 
 @admin.register(SocialPostDestination)
 class SocialPostDestinationAdmin(admin.ModelAdmin):
-    list_display = ('post', 'account', 'platform_type')
-    list_filter = ('platform_type', 'account')
+    # CORREÇÃO: Usamos 'format_type' em vez de 'platform_type'
+    list_display = ('post', 'account', 'format_type')
+    list_filter = ('format_type', 'account')

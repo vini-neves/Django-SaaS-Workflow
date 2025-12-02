@@ -25,6 +25,14 @@
             <span>Nenhum anexo</span>
         {% endif %}
     </div>
+    <div class="detail-item">
+        <strong>Manual da Marca Anexado:</strong> 
+        {% if client.manual_marca %}
+            <a href="{{ client.manual_marca.url }}" target="_blank">Baixar Manual</a>
+        {% else %}
+            <span>Nenhum anexo</span>
+        {% endif %}
+    </div>
 </div>
 
 <div class="detail-section">

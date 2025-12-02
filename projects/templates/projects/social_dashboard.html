@@ -15,13 +15,13 @@
             <h1>Gestão de Redes Sociais</h1>
             <p>Conecte suas contas, agende posts e veja métricas.</p>
         </div>
-        <button
-            id="create-post-btn"
-            class="form-button"
-            style="background-color: var(--primary-color)"
-        >
-            <i data-feather="plus-square" style="margin-right: 8px"></i> Criar Novo Post
-        </button>
+        <a 
+    href="{% url 'create_post_studio' %}" 
+    class="form-button" 
+    style="background-color: var(--primary-color); text-decoration: none; display: inline-flex; align-items: center;"
+>
+    <i data-feather="plus-square" style="margin-right: 8px"></i> Criar Novo Post
+</a>
     </div>
 
     <h3 style="margin-bottom: 15px">Contas Conectadas</h3>
@@ -188,13 +188,15 @@
     </div>
     {% endblock %}
 
-
-{% block extra_js %}
-<script>
-    // --- Variáveis globais para o JS ---
-    const CSRF_TOKEN = "{{ csrf_token }}";
-    const CREATE_POST_API_URL = "{% url 'create_social_post_api' %}";
-    // Adicione outras URLs aqui conforme necessário
-</script>
-<script src="{% static 'js/social.js' %}"></script>
-{% endblock %}
+    {% block extra_js %}
+    <script>
+        // --- PONTE DE CONFIGURAÇÃO ---
+        // Passamos as variáveis do Django para o JavaScript Global aqui.
+        // O arquivo externo lerá estas constantes.
+        const CSRF_TOKEN = "{{ csrf_token }}";
+        const API_URL = "{% url 'create_social_post_api' %}";
+        const KANBAN_URL = "{% url 'kanban_operational' %}";
+    </script>
+    
+    <script src="{% static 'js/create_post_studio.js' %}"></script>
+    {% endblock %}
