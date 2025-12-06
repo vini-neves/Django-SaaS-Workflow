@@ -49,7 +49,7 @@
     </div>
 
     {# --- MODAL DE ADICIONAR TAREFA (GERAL) --- #}
-    <div id="add-task-modal" class="modal">
+    <div id="add-task-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button" data-modal-id="add-task-modal">&times;</span>
             <h2>Nova Tarefa Geral</h2>
@@ -82,9 +82,13 @@
                     <label for="task-assigned-to">Atribuir a:</label>
                     <select id="task-assigned-to" name="assigned_to" class="form-input">
                         <option value="">Ninguém</option>
-                        {% for user in agency_users %}
-                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        
+                        {% for u in agency_users %}
+                            <option value="{{ u.id }}">{{ u.username }}</option>
+                        {% empty %}
+                            <option value="" disabled>Nenhum colaborador cadastrado</option>
                         {% endfor %}
+                        
                     </select>
                 </div>
                 
@@ -94,12 +98,12 @@
     </div>
     
     {# --- MODAL DE DETALHES (Compartilhado) --- #}
-    <div id="task-details-modal" class="modal">
+    <div id="task-details-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button" data-modal-id="task-details-modal">&times;</span>
             <div id="task-details-content">
                 </div>
-        </div>
+        </div>  
     </div>
 
     <script>

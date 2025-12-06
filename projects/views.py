@@ -33,7 +33,7 @@ OPERATIONAL_STAGES = [
 
 @login_required
 def kanban_view(request, kanban_type='general'):
-    # Define as colunas baseadas no tipo
+    # 1. Define as colunas e o título baseados no tipo
     if kanban_type == 'operational':
         stages = [
             ('briefing', 'Briefing'),
@@ -42,24 +42,40 @@ def kanban_view(request, kanban_type='general'):
             ('internal_approval', 'Aprovação Interna'),
             ('client_approval', 'Aprovação Cliente'),
             ('scheduling', 'Agendamento'),
+            ('published', 'Publicado'), # Adicionei publicado para completar o ciclo
         ]
         template = 'projects/operational_kanban.html'
+        kanban_title = 'Kanban Operacional' # <-- Definido aqui
     else:
-        stages = [('todo', 'A Fazer'), ('doing', 'Em Andamento'), ('done', 'Concluído')]
+        stages = [
+            ('todo', 'A Fazer'), 
+            ('doing', 'Em Andamento'), 
+            ('done', 'Concluído')
+        ]
         template = 'projects/general_kanban.html'
+        kanban_title = 'Kanban Geral' # <-- Definido aqui
 
-    # Busca tarefas APENAS desse tipo
+    # 2. Busca tarefas APENAS desse tipo
     tasks = Task.objects.filter(kanban_type=kanban_type).order_by('order')
     
-    # Organiza para o template
+    # 3. Organiza os dados
     kanban_data = {}
     for key, label in stages:
-        kanban_data[key] = tasks.filter(status=key)
+        stage_tasks = tasks.filter(status=key)
+        kanban_data[key] = [task.to_dict() for task in stage_tasks]
+
+    agency_users = CustomUser.objects.filter(agency=request.tenant)
 
     context = {
+        # MUDANÇA AQUI:
+        'kanban_data': kanban_data, # Passa como DICT para o HTML funcionar
+        'kanban_data_json': json.dumps(kanban_data), # Passa como JSON para o JavaScript
+        
         'stages': stages,
-        'kanban_data': kanban_data,
-        'kanban_type': kanban_type
+        'projects': Project.objects.all(),
+        'agency_users': agency_users,
+        'kanban_type': kanban_type,
+        'kanban_title': kanban_title,
     }
     return render(request, template, context)
 

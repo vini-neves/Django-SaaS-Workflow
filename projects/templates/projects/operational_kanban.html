@@ -6,16 +6,27 @@
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
     <style>
-        /* Ajuste para as muitas colunas do operacional */
-        .kanban-board { overflow-x: auto; padding-bottom: 20px; }
-        .kanban-column { min-width: 260px; }
+        /* Adjustments for the wider operational kanban */
+        .kanban-board { 
+            overflow-x: auto; 
+            padding-bottom: 20px;
+            display: flex;
+            gap: 15px;
+        }
         
-        /* Cores das fases */
-        [data-status="briefing"] { border-top: 4px solid #999; }
+        .kanban-column { 
+            min-width: 280px; /* Slightly wider for better readability */
+            flex: 0 0 auto;   /* Prevents shrinking */
+        }
+        
+        /* Status-specific border colors */
+        [data-status="briefing"] { border-top: 4px solid #95a5a6; }
         [data-status="copy"] { border-top: 4px solid #3498db; }
         [data-status="design"] { border-top: 4px solid #9b59b6; }
+        [data-status="internal_approval"] { border-top: 4px solid #e67e22; }
         [data-status="client_approval"] { border-top: 4px solid #f1c40f; }
         [data-status="scheduling"] { border-top: 4px solid #2ecc71; }
+        [data-status="published"] { border-top: 4px solid #27ae60; }
     </style>
 {% endblock %}
 
@@ -23,64 +34,108 @@
 
 {% block content %}
     <div class="kanban-header">
-        <h1>Fluxo Operacional</h1>
-        <button id="add-operational-btn" class="form-button">
-            <i data-feather="plus"></i> Iniciar Nova Demanda
-        </button>
+        <div>
+            <h1>Fluxo Operacional</h1>
+            <p>Gerencie a produção de conteúdo desde o briefing até a publicação.</p>
+        </div>
+        <div>
+            <a href="{% url 'kanban_general' %}" class="toggle-button" style="text-decoration: none; margin-right: 10px;">
+                <i data-feather="repeat"></i> <span>Ir para Kanban Geral</span>
+            </a>
+            
+            <button id="add-operational-btn" class="add-task-button">
+                <i data-feather="plus"></i> Iniciar Nova Demanda
+            </button>
+        </div>
     </div>
 
     <div class="kanban-board">
         {% for stage_key, stage_label in stages %}
-        <div class="kanban-column" data-status="{{ stage_key }}">
+        <div class="kanban-column" id="column-{{ stage_key }}" data-status="{{ stage_key }}">
             <div class="column-header">
                 <h3>{{ stage_label }}</h3>
-            </div>
+                </div>
             <div class="column-cards">
+                {# Use the custom filter 'get_item' to access the dictionary by key #}
                 {% for task in kanban_data|get_item:stage_key %}
-                    <div class="kanban-card" draggable="true" data-task-id="{{ task.id }}">
-                        <h4>{{ task.title }}</h4>
+                    <div class="kanban-card" draggable="true" data-task-id="{{ task.id }}" data-status="{{ stage_key }}">
+                        <h4 class="kanban-card-title">{{ task.title }}</h4>
+                        
                         <div class="card-footer">
-                            <span class="project-tag">{{ task.project.name }}</span>
-                            {% if task.social_post %}
-                                <i data-feather="image" style="width:14px"></i>
-                            {% endif %}
+                            <span class="kanban-card-project">{{ task.project_name }}</span>
+                            
+                            <div style="display: flex; align-items: center; gap: 5px;">
+                                {% if task.social_post_id %}
+                                    <i data-feather="image" style="width:14px; color: #666;" title="Post Social Associado"></i>
+                                {% endif %}
+                                
+                                {% if task.assigned_to_initials %}
+                                    <div class="card-assignee-avatar" title="{{ task.assigned_to }}">
+                                        {{ task.assigned_to_initials }}
+                                    </div>
+                                {% endif %}
+                            </div>
                         </div>
                     </div>
-                {% endfor %}
+                {% empty %}
+                    {% endfor %}
             </div>
         </div>
         {% endfor %}
     </div>
 
-    <div id="add-op-modal" class="modal">
+    <div id="add-op-modal" class="modal" style="display: none;">
         <div class="modal-content">
             <span class="close-button">&times;</span>
             <h2>Nova Demanda de Conteúdo</h2>
             <form id="add-op-form" enctype="multipart/form-data">
                 {% csrf_token %}
+                
                 <div class="form-group">
-                    <label>Título (Tema do Post):</label>
-                    <input type="text" name="title" class="form-input" required>
+                    <label for="op-title">Título (Tema do Post):</label>
+                    <input type="text" id="op-title" name="title" class="form-input" required placeholder="Ex: Post Dia das Mães">
                 </div>
+                
                 <div class="form-group">
-                    <label>Briefing Inicial:</label>
-                    <textarea name="description" class="form-input" rows="3"></textarea>
+                    <label for="op-desc">Briefing Inicial:</label>
+                    <textarea id="op-desc" name="description" class="form-input" rows="3" placeholder="Descreva o objetivo do post..."></textarea>
                 </div>
+                
                 <div class="form-group">
-                    <label>Projeto/Cliente:</label>
-                    <select name="project" class="form-input">
+                    <label for="op-project">Projeto/Cliente:</label>
+                    <select id="op-project" name="project" class="form-input" required>
+                        <option value="" disabled selected>Selecione...</option>
                         {% for project in projects %}
                             <option value="{{ project.id }}">{{ project.name }}</option>
                         {% endfor %}
                     </select>
                 </div>
+                
                 <div class="form-group">
-                    <label>Referência (Imagem):</label>
-                    <input type="file" name="reference_image" class="form-input">
+                    <label for="op-assigned">Atribuir a (Opcional):</label>
+                    <select id="op-assigned" name="assigned_to" class="form-input">
+                        <option value="">Ninguém</option>
+                        {% for user in agency_users %}
+                            <option value="{{ user.id }}">{{ user.username }}</option>
+                        {% endfor %}
+                    </select>
+                </div>
+
+                <div class="form-group">
+                    <label for="op-ref">Referência (Imagem):</label>
+                    <input type="file" id="op-ref" name="reference_image" class="form-input">
                 </div>
                 
-                <button type="submit" class="form-button">Iniciar no Briefing</button>
+                <button type="submit" class="modal-button" style="background-color: var(--primary-color);">Iniciar no Briefing</button>
             </form>
+        </div>
+    </div>
+
+    <div id="task-details-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+            <span class="close-button" data-modal-id="task-details-modal">&times;</span>
+            <div id="task-details-content">
+                </div>
         </div>
     </div>
 
@@ -90,8 +145,11 @@
 <script>
     // Configurações para o JS
     const ADD_OP_URL = "{% url 'add_operational_task' %}";
-    const UPDATE_TASK_URL = "{% url 'kanban_update_task' %}";
+    const KANBAN_UPDATE_URL = "{% url 'kanban_update_task' %}";
+    const GET_TASK_DETAILS_URL_BASE = "{% url 'get_task_details_api' 0 %}".replace('0', '');
+    const DELETE_TASK_URL_BASE = "{% url 'delete_task_api' 0 %}".replace('0', '');
     const CSRF_TOKEN = "{{ csrf_token }}";
 </script>
+
 <script src="{% static 'js/kanban_operational.js' %}"></script>
 {% endblock %}

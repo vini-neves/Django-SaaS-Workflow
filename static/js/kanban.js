@@ -76,9 +76,9 @@ document.addEventListener('DOMContentLoaded', () => {
             draggedCard = null;
         });
         
-        // --- ABRIR MODAL DE DETALHES ---
+       
         card.addEventListener('click', (e) => {
-            // Não abre o modal se o clique foi no botão de deletar
+           
             if (e.target.closest('.card-delete-btn')) {
                 return;
             }
