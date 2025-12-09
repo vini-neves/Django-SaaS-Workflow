@@ -1,17 +1,20 @@
-{# projects/templates/projects/base.html #} {% load static %}
+{# projects/templates/projects/base.html #}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
-  <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    
     {% if agency_logo %}
-    <link rel="icon" href="{{ agency_logo.url }}" />
+        <link rel="icon" href="{{ agency_logo.url }}">
     {% endif %}
-
+    
     <title>{% block title %}Plataforma{% endblock %}</title>
 
     <style>
         :root {
+            /* Se a variável não vier do banco, usa a cor padrão (default) */
             --primary-color: {{ agency_primary_color|default:"#333366" }};
             --secondary-color: {{ agency_secondary_color|default:"#007bff" }};
             --text-on-primary: #ffffff;
@@ -21,12 +24,13 @@
             --sidebar-width: 250px;
         }
     </style>
-    
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css">
     <link rel="stylesheet" href="{% static 'css/base.css' %}">
     
     {% block extra_css %}{% endblock %}
-  </head>
-  <body>
+    
+</head>
+<body>
     <div class="app-container">
       <aside class="sidebar">
         <div class="logo-container">
@@ -98,7 +102,10 @@
             <i data-feather="users"></i>
             <span>Clientes</span>
           </a>
-          {# Adicione mais links aqui (ex: 'activity' para relatórios) #}
+          <a href="#" class="nav-link" id="nav-metrics-btn">
+            <i data-feather="bar-chart-2"></i>
+            <span>Métricas</span>
+          </a>
         </nav>
 
         <div class="user-profile">
@@ -116,6 +123,21 @@
 
       <main class="content">{% block content %} {% endblock %}</main>
     </div>
+    <div id="metrics-client-modal" class="modal" style="display: none; z-index: 2000;">
+    <div class="modal-content" style="max-width: 400px; text-align: center;">
+        <span class="close-button" onclick="document.getElementById('metrics-client-modal').style.display='none'">&times;</span>
+        <h2 style="color: var(--primary-color);">Visualizar Métricas</h2>
+        <p style="color: #666; margin-bottom: 20px;">Selecione o cliente para ver o dashboard.</p>
+        
+        <select id="metrics-client-select" class="form-input" style="margin-bottom: 20px;">
+            <option value="" disabled selected>Carregando clientes...</option>
+        </select>
+        
+        <button id="btn-go-metrics" class="form-button" style="background-color: var(--primary-color);">
+            Ver Dashboard
+        </button>
+    </div>
+</div>
 
     <script src="https://unpkg.com/feather-icons"></script>
     <script>
@@ -143,6 +165,62 @@
         }
       });
     </script>
+    <script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const metricsBtn = document.getElementById('nav-metrics-btn');
+        const metricsModal = document.getElementById('metrics-client-modal');
+        const clientSelect = document.getElementById('metrics-client-select');
+        const goBtn = document.getElementById('btn-go-metrics');
+        
+        // URL da API que criamos
+        const CLIENT_LIST_API = "{% url 'get_clients_list_api' %}";
+        // Base da URL de métricas (removemos o placeholder '0' depois)
+        const METRICS_URL_BASE = "{% url 'client_metrics' 0 %}".replace('0/metrics/', '');
+
+        if(metricsBtn) {
+            metricsBtn.addEventListener('click', async (e) => {
+                e.preventDefault();
+                
+                // Abre o modal
+                metricsModal.style.display = 'flex';
+                
+                // Busca os clientes via AJAX
+                try {
+                    const response = await fetch(CLIENT_LIST_API);
+                    const data = await response.json();
+                    
+                    // Popula o select
+                    clientSelect.innerHTML = '<option value="" disabled selected>Selecione um cliente...</option>';
+                    data.clients.forEach(client => {
+                        const option = document.createElement('option');
+                        option.value = client.id;
+                        option.textContent = client.name;
+                        clientSelect.appendChild(option);
+                    });
+                } catch (error) {
+                    console.error("Erro ao buscar clientes:", error);
+                    clientSelect.innerHTML = '<option value="">Erro ao carregar</option>';
+                }
+            });
+        }
+
+        // Botão "Ver Dashboard"
+        goBtn.addEventListener('click', () => {
+            const clientId = clientSelect.value;
+            if (clientId) {
+                // Redireciona para /clients/{id}/metrics/
+                window.location.href = `${METRICS_URL_BASE}${clientId}/metrics/`;
+            } else {
+                alert("Por favor, selecione um cliente.");
+            }
+        });
+        
+        // Fecha ao clicar fora
+        window.addEventListener('click', (e) => {
+            if(e.target === metricsModal) metricsModal.style.display = 'none';
+        });
+    });
+</script>
 
     {% block extra_js %} {% endblock %}
   </body>

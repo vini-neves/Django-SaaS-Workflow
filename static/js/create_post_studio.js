@@ -14,72 +14,68 @@ document.addEventListener('DOMContentLoaded', () => {
     // --- LISTA MESTRA DE PLATAFORMAS (Fixa) ---
     // O JS vai desenhar ESSA lista, não importa o que venha do banco.
     const SUPPORTED_PLATFORMS = [
-        { id: 'facebook', name: 'Facebook', icon: 'facebook' },
-        { id: 'instagram', name: 'Instagram', icon: 'instagram' },
-        { id: 'linkedin', name: 'LinkedIn', icon: 'linkedin' },
-        { id: 'youtube', name: 'YouTube', icon: 'youtube' },
-        { id: 'tiktok', name: 'TikTok', icon: 'video' },
-        { id: 'twitter', name: 'X (Twitter)', icon: 'twitter' },
-        { id: 'pinterest', name: 'Pinterest', icon: 'map-pin' }
+        { id: 'facebook', name: 'Facebook', icon: 'facebook-f', type: 'brands' },
+        { id: 'instagram', name: 'Instagram', icon: 'instagram', type: 'brands' },
+        { id: 'linkedin', name: 'LinkedIn', icon: 'linkedin-in', type: 'brands' },
+        { id: 'youtube', name: 'YouTube', icon: 'youtube', type: 'brands' },
+        { id: 'tiktok', name: 'TikTok', icon: 'tiktok', type: 'brands' },
+        { id: 'x', name: 'X (Twitter)', icon: 'x-twitter', type: 'brands' },
+        { id: 'threads', name: 'Threads', icon: 'threads', type: 'brands' },
+        { id: 'pinterest', name: 'Pinterest', icon: 'pinterest-p', type: 'brands' }
     ];
 
     // --- FUNÇÃO DE RENDERIZAÇÃO ---
     function renderChannelBar(clientId) {
-        // Limpa a barra atual
         channelBar.innerHTML = ''; 
         
-        // Se nenhum cliente selecionado, mostra aviso
         if (!clientId) {
             channelBar.innerHTML = '<p style="color:#999; font-size:0.9em; width:100%; text-align:center;">Selecione um cliente acima para ver os canais.</p>';
             return;
         }
 
-        // Pega as contas conectadas deste cliente específico
-        // Se o cliente não tiver nada, retorna objeto vazio {}
         const clientAccounts = (typeof CLIENTS_MAP !== 'undefined' && CLIENTS_MAP[clientId]) ? CLIENTS_MAP[clientId] : {};
 
-        // LOOP PRINCIPAL: Percorre as plataformas FIXAS
         SUPPORTED_PLATFORMS.forEach(platform => {
-            
-            // Verifica se o cliente tem essa plataforma conectada
             const account = clientAccounts[platform.id]; 
-            const isConnected = !!account; // True ou False
+            const isConnected = !!account;
 
-            // Cria o elemento visual (Label)
             const label = document.createElement('label');
             label.className = 'channel-select-item';
             
+            // Definimos o tipo de ícone (padrão 'brands' se não especificado)
+            const iconType = platform.type || 'brands';
+
             if (isConnected) {
-                // --- CENÁRIO 1: CONECTADO (Mostra Colorido e Checkbox) ---
+                // --- CONECTADO ---
                 label.title = `${platform.name}: ${account.name}`;
                 label.innerHTML = `
                     <input type="checkbox" name="accounts" value="${account.id}" data-platform="${platform.id}">
                     <div class="channel-icon-lg bg-${platform.id}">
-                        <i data-feather="${platform.icon}"></i>
+                        <i class="fa-${iconType} fa-${platform.icon}"></i>
                     </div>
+                    <span class="channel-name-label">${platform.name}</span>
                 `;
                 
-                // Adiciona evento para atualizar o preview ao clicar
                 const checkbox = label.querySelector('input');
                 checkbox.addEventListener('change', () => {
                     if (window.updateTabs) window.updateTabs();
                 });
 
             } else {
-                // --- CENÁRIO 2: DESCONECTADO (Mostra Cinza com +) ---
-                // Isso vai aparecer mesmo que o banco venha vazio!
+                // --- DESCONECTADO ---
                 label.title = `Conectar ${platform.name}`;
                 label.innerHTML = `
                     <div class="channel-icon-lg disconnected" onclick="redirectToConnect('${platform.name}')">
-                        <i data-feather="${platform.icon}"></i>
+                        <i class="fa-${iconType} fa-${platform.icon}"></i>
                         <span class="plus-badge">+</span>
                     </div>
+                    <span class="channel-name-label">${platform.name}</span>
                 `;
             }
 
-            // Adiciona na tela
             channelBar.appendChild(label);
         });
+    
 
         // Atualiza os ícones SVG
         if (typeof feather !== 'undefined') feather.replace();

@@ -1,7 +1,166 @@
 {% extends "projects/base.html" %}
+{% load static %}
+
+{% block extra_css %}
+    <style>
+        .metrics-header { margin-bottom: 30px; display: flex; justify-content: space-between; align-items: center; }
+        .metrics-header h1 { margin: 0; color: var(--primary-color); }
+        .client-badge { background: #eef2f5; padding: 5px 15px; border-radius: 20px; color: #555; font-weight: 600; }
+
+        /* Grid de Cards (KPIs) */
+        .kpi-grid {
+            display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; margin-bottom: 40px;
+        }
+        .kpi-card {
+            background: white; padding: 20px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            text-align: center; border-bottom: 4px solid var(--secondary-color);
+        }
+        .kpi-value { font-size: 2.5rem; font-weight: 700; color: #333; display: block; margin-bottom: 5px; }
+        .kpi-label { font-size: 0.9rem; color: #777; text-transform: uppercase; letter-spacing: 1px; }
+
+        /* Grid de Gráficos */
+        .charts-grid {
+            display: grid; grid-template-columns: 1fr 1fr; gap: 30px; margin-bottom: 40px;
+        }
+        .chart-container {
+            background: white; padding: 25px; border-radius: 12px; box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+            min-height: 350px;
+        }
+        .chart-container h3 { margin-top: 0; color: #444; margin-bottom: 20px; text-align: center; }
+
+        @media (max-width: 900px) { .charts-grid { grid-template-columns: 1fr; } }
+    </style>
+{% endblock %}
+
 {% block title %}Métricas - {{ client.name }}{% endblock %}
+
 {% block content %}
-    <h1>Dashboard de Métricas: {{ client.name }}</h1>
-    <p>Em construção...</p>
-    <a href="{% url 'client_list' %}">Voltar</a>
+
+    <div class="metrics-header">
+        <div>
+            <h1>Dashboard de Performance</h1>
+            <p>Visão geral dos dados de <strong>{{ client.name }}</strong></p>
+        </div>
+        <div class="client-badge">
+            CNPJ: {{ client.cnpj|default:"-" }}
+        </div>
+    </div>
+
+    <div class="kpi-grid">
+        <div class="kpi-card">
+            <span class="kpi-value">{{ total_posts }}</span>
+            <span class="kpi-label">Postagens Criadas</span>
+        </div>
+        <div class="kpi-card" style="border-color: #28a745;">
+            <span class="kpi-value">{{ total_views }}</span>
+            <span class="kpi-label">Alcance Total</span>
+        </div>
+        <div class="kpi-card" style="border-color: #ffc107;">
+            <span class="kpi-value">{{ total_likes }}</span>
+            <span class="kpi-label">Curtidas Totais</span>
+        </div>
+        <div class="kpi-card" style="border-color: var(--primary-color);">
+            <span class="kpi-value">{{ total_tasks }}</span>
+            <span class="kpi-label">Tarefas Geradas</span>
+        </div>
+    </div>
+
+    <div class="charts-grid">
+        
+        <div class="chart-container">
+            <h3>Status das Publicações</h3>
+            <canvas id="postsChart"></canvas>
+        </div>
+
+        <div class="chart-container">
+            <h3>Progresso de Tarefas (Kanban)</h3>
+            <canvas id="tasksChart"></canvas>
+        </div>
+
+    </div>
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <script>
+        // Dados vindos do Django
+        const taskData = {{ task_chart_data|safe }};
+        const postData = {{ post_chart_data|safe }};
+
+        // --- Configuração Comum ---
+        const commonOptions = {
+            responsive: true,
+            plugins: { legend: { position: 'bottom' } }
+        };
+
+        // --- Gráfico de Posts (Barra) ---
+        const ctxPosts = document.getElementById('postsChart').getContext('2d');
+        
+        // Mapeamento de labels para português
+        const postLabelsMap = {
+            'draft': 'Rascunho', 'scheduled': 'Agendado', 'published': 'Publicado',
+            'copy_review': 'Em Copy', 'design_review': 'Em Design', 
+            'client_approval': 'Aprovação Cliente', 'approved_to_schedule': 'Pronto p/ Agendar'
+        };
+        
+        const postLabels = Object.keys(postData).map(k => postLabelsMap[k] || k);
+        const postValues = Object.values(postData);
+
+        new Chart(ctxPosts, {
+            type: 'bar',
+            data: {
+                labels: postLabels,
+                datasets: [{
+                    label: 'Quantidade de Posts',
+                    data: postValues,
+                    backgroundColor: [
+                        'rgba(54, 162, 235, 0.6)', // Azul
+                        'rgba(75, 192, 192, 0.6)', // Verde
+                        'rgba(255, 206, 86, 0.6)', // Amarelo
+                        'rgba(255, 99, 132, 0.6)', // Vermelho
+                    ],
+                    borderColor: [
+                        'rgba(54, 162, 235, 1)',
+                        'rgba(75, 192, 192, 1)',
+                        'rgba(255, 206, 86, 1)',
+                        'rgba(255, 99, 132, 1)',
+                    ],
+                    borderWidth: 1
+                }]
+            },
+            options: commonOptions
+        });
+
+        // --- Gráfico de Tarefas (Doughnut/Rosca) ---
+        const ctxTasks = document.getElementById('tasksChart').getContext('2d');
+        
+        const taskLabelsMap = {
+            'todo': 'A Fazer', 'doing': 'Em Andamento', 'done': 'Concluído',
+            'briefing': 'Briefing', 'copy': 'Copy', 'design': 'Design',
+            'internal_approval': 'Aprovação Int.', 'client_approval': 'Aprovação Ext.',
+            'scheduling': 'Agendamento'
+        };
+
+        const taskLabels = Object.keys(taskData).map(k => taskLabelsMap[k] || k);
+        const taskValues = Object.values(taskData);
+
+        new Chart(ctxTasks, {
+            type: 'doughnut',
+            data: {
+                labels: taskLabels,
+                datasets: [{
+                    data: taskValues,
+                    backgroundColor: [
+                        '#ccc', '#3498db', '#2ecc71', // Cores básicas
+                        '#9b59b6', '#e67e22', '#f1c40f' // Cores operacionais
+                    ],
+                    hoverOffset: 4
+                }]
+            },
+            options: commonOptions
+        });
+
+    </script>
 {% endblock %}

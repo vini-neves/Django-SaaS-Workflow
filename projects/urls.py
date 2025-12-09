@@ -15,6 +15,7 @@ urlpatterns = [
     path('clients/<int:pk>/metrics/', views.client_metrics_dashboard, name='client_metrics'),
     path('api/clients/<int:pk>/get/', views.get_client_data_api, name='get_client_data_api'),
     path('api/clients/save/', views.AddClientAPI.as_view(), name='add_client_api'),
+    path('api/clients/list-simple/', views.get_clients_list_api, name='get_clients_list_api'),
 
     # --- CALENDÁRIO ---
     path('calendar/', views.calendar_view, name='calendar_view'),

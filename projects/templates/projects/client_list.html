@@ -33,18 +33,68 @@
         .status-inactive { background-color: #f8d7da; color: #721c24; }
 
         /* Ícones Sociais no Form */
-        .social-connect-grid { display: flex; gap: 10px; margin-top: 10px; }
-        .social-connect-item {
-            width: 40px; height: 40px; border-radius: 50%; background: #eee;
-            display: flex; align-items: center; justify-content: center; cursor: pointer;
-            transition: all 0.2s; border: 2px solid transparent;
+        .social-connect-grid { 
+            display: flex; 
+            gap: 15px; 
+            margin-top: 10px; 
+            flex-wrap: wrap; 
         }
-        .social-connect-item:hover { transform: scale(1.1); filter: brightness(0.95); }
-        /* Cores */
-        .sc-facebook { background: #1877F2; color: white; }
-        .sc-instagram { background: linear-gradient(45deg, #f09433, #bc1888); color: white; }
-        .sc-linkedin { background: #0077B5; color: white; }
-        .sc-tiktok { background: #000; color: white; }
+        
+        /* Item Container (Ícone + Texto) */
+        .social-item-wrapper {
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            gap: 5px;
+            width: 70px; /* Largura fixa para alinhar */
+            text-align: center;
+            cursor: pointer;
+        }
+        
+        .social-item-wrapper:hover .social-connect-item {
+            transform: scale(1.1);
+            filter: brightness(1.1);
+        }
+
+        /* A Bolinha do Ícone */
+        .social-connect-item {
+            width: 45px; 
+            height: 45px; 
+            border-radius: 50%; 
+            background: #eee;
+            display: flex; 
+            align-items: center; 
+            justify-content: center; 
+            transition: all 0.2s; 
+            border: 2px solid transparent;
+            font-size: 20px; /* Tamanho do ícone FontAwesome */
+            color: white; /* Cor padrão do ícone */
+        }
+        
+        /* O Texto do Nome */
+        .social-name {
+            font-size: 0.75rem;
+            color: #666;
+            font-weight: 500;
+            line-height: 1.2;
+        }
+
+        /* Cores (Reutilizando as variáveis globais do social.css se disponível, ou definindo aqui) */
+        .sc-facebook { background: #1877F2; }
+        .sc-instagram { background: linear-gradient(45deg, #f09433, #bc1888); }
+        .sc-linkedin { background: #0077B5; }
+        .sc-tiktok { background: #000000; }
+        .sc-pinterest { background: #E60023; }
+        .sc-youtube { background: #FF0000; }
+        .sc-threads { background: #000000; }
+        .sc-x { background: #000000; }
+        
+        .sc-meta-ads { background: #0668E1; }
+        .sc-tiktok-ads { background: #000; color: #00F2EA !important; } /* TikTok Ads tem ícone ciano */
+        .sc-linkedin-ads { background: #0077B5; color: #FFD700 !important; }
+        .sc-google-ads { background: #4285F4; }
+        .sc-google-my-business { background: #4285F4; }
+        .sc-ga4 { background: #F9AB00; }
     </style>
 {% endblock %}
 
@@ -171,10 +221,75 @@
                 <h4 style="margin-top: 20px; margin-bottom: 10px;">Conectar Redes Sociais (Opcional)</h4>
                 <p style="font-size: 0.85em; color: #666;">Clique para iniciar a conexão da API para este cliente.</p>
                 <div class="social-connect-grid">
-                    <div class="social-connect-item sc-facebook" onclick="connectSocial('facebook')" title="Facebook"><i data-feather="facebook"></i></div>
-                    <div class="social-connect-item sc-instagram" onclick="connectSocial('instagram')" title="Instagram"><i data-feather="instagram"></i></div>
-                    <div class="social-connect-item sc-linkedin" onclick="connectSocial('linkedin')" title="LinkedIn"><i data-feather="linkedin"></i></div>
-                    <div class="social-connect-item sc-tiktok" onclick="connectSocial('tiktok')" title="TikTok"><i data-feather="video"></i></div>
+                    <div class="social-item-wrapper" onclick="connectSocial('facebook')">
+                        <div class="social-connect-item sc-facebook"><i class="fa-brands fa-facebook-f"></i></div>
+                        <span class="social-name">Facebook</span>
+                    </div>
+                    
+                    <div class="social-item-wrapper" onclick="connectSocial('instagram')">
+                        <div class="social-connect-item sc-instagram"><i class="fa-brands fa-instagram"></i></div>
+                        <span class="social-name">Instagram</span>
+                    </div>
+                    
+                    <div class="social-item-wrapper" onclick="connectSocial('linkedin')">
+                        <div class="social-connect-item sc-linkedin"><i class="fa-brands fa-linkedin-in"></i></div>
+                        <span class="social-name">LinkedIn</span>
+                    </div>
+                    
+                    <div class="social-item-wrapper" onclick="connectSocial('tiktok')">
+                        <div class="social-connect-item sc-tiktok"><i class="fa-brands fa-tiktok"></i></div>
+                        <span class="social-name">TikTok</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('pinterest')">
+                        <div class="social-connect-item sc-pinterest"><i class="fa-brands fa-pinterest-p"></i></div>
+                        <span class="social-name">Pinterest</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('youtube')">
+                        <div class="social-connect-item sc-youtube"><i class="fa-brands fa-youtube"></i></div>
+                        <span class="social-name">YouTube</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('threads')">
+                        <div class="social-connect-item sc-threads"><i class="fa-brands fa-threads"></i></div>
+                        <span class="social-name">Threads</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('x')">
+                        <div class="social-connect-item sc-x"><i class="fa-brands fa-x-twitter"></i></div>
+                        <span class="social-name">X</span>
+                    </div>
+                    
+                    <div class="social-item-wrapper" onclick="connectSocial('meta_ads')">
+                        <div class="social-connect-item sc-meta-ads"><i class="fa-brands fa-meta"></i></div>
+                        <span class="social-name">Meta Ads</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('tiktok_ads')">
+                        <div class="social-connect-item sc-tiktok-ads"><i class="fa-solid fa-chart-line"></i></div>
+                        <span class="social-name">TikTok Ads</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('linkedin_ads')">
+                        <div class="social-connect-item sc-linkedin-ads"><i class="fa-brands fa-linkedin"></i></div>
+                        <span class="social-name">LinkedIn Ads</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('google_ads')">
+                        <div class="social-connect-item sc-google-ads"><i class="fa-brands fa-google"></i></div>
+                        <span class="social-name">Google Ads</span>
+                    </div>
+                    
+                    <div class="social-item-wrapper" onclick="connectSocial('google_my_business')">
+                        <div class="social-connect-item sc-google-my-business"><i class="fa-solid fa-store"></i></div>
+                        <span class="social-name">Meu Negócio</span>
+                    </div>
+
+                    <div class="social-item-wrapper" onclick="connectSocial('ga4')">
+                        <div class="social-connect-item sc-ga4"><i class="fa-solid fa-chart-simple"></i></div>
+                        <span class="social-name">Analytics 4</span>
+                    </div>
                 </div>
 
                 <button type="submit" class="form-button" style="margin-top: 25px; background-color: var(--primary-color);">Salvar Dados do Cliente</button>

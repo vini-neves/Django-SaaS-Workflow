@@ -64,15 +64,20 @@ def kanban_view(request, kanban_type='general'):
         stage_tasks = tasks.filter(status=key)
         kanban_data[key] = [task.to_dict() for task in stage_tasks]
 
+   # Busca usuários da agência
     agency_users = CustomUser.objects.filter(agency=request.tenant)
+    
+    # --- VERIFIQUE SE ESTA LINHA EXISTE E ESTÁ CORRETA ---
+    projects_list = Project.objects.all() 
+    # -----------------------------------------------------
 
     context = {
-        # MUDANÇA AQUI:
-        'kanban_data': kanban_data, # Passa como DICT para o HTML funcionar
-        'kanban_data_json': json.dumps(kanban_data), # Passa como JSON para o JavaScript
-        
+        'kanban_data': kanban_data, # (ou json.dumps, dependendo da sua versão anterior)
+        'kanban_data_json': json.dumps(kanban_data),
         'stages': stages,
-        'projects': Project.objects.all(),
+        
+        'projects': projects_list, # <--- ESSA VARIÁVEL É CRÍTICA
+        'clients': Client.objects.all(),
         'agency_users': agency_users,
         'kanban_type': kanban_type,
         'kanban_title': kanban_title,
@@ -395,22 +400,38 @@ pass
 
 @login_required
 def client_metrics_dashboard(request, pk):
-    """
-    Tela dedicada a mostrar métricas e dados sociais de um cliente específico.
-    """
     client = get_object_or_404(Client, pk=pk)
     
-    # Aqui futuramente buscaremos dados reais das APIs
-    # Por enquanto, passamos as contas conectadas
-    connected_accounts = client.social_accounts.all()
+    # --- 1. DADOS DE TAREFAS (Para Gráfico de Pizza) ---
+    tasks = Task.objects.filter(project__client=client) # Tarefas ligadas a projetos do cliente
+    # Se quiser incluir tarefas operacionais avulsas ligadas via social_post:
+    tasks_avulsas = Task.objects.filter(social_post__client=client)
     
-    # Projetos do cliente
-    projects = client.projects.all()
+    # União de querysets (distinct para evitar duplicatas se houver sobreposição)
+    all_client_tasks = (tasks | tasks_avulsas).distinct()
+    
+    task_status_counts = all_client_tasks.values('status').annotate(count=models.Count('id'))
+    # Formata: {'todo': 10, 'doing': 5}
+    task_chart_data = {item['status']: item['count'] for item in task_status_counts}
+
+    # --- 2. DADOS SOCIAIS (Para Gráfico de Barras) ---
+    posts = client.social_posts.all()
+    posts_by_status = posts.values('approval_status').annotate(count=models.Count('id'))
+    post_chart_data = {item['approval_status']: item['count'] for item in posts_by_status}
+    
+    # Métricas totais (Soma)
+    total_likes = posts.aggregate(models.Sum('likes_count'))['likes_count__sum'] or 0
+    total_views = posts.aggregate(models.Sum('views_count'))['views_count__sum'] or 0
 
     context = {
         'client': client,
-        'connected_accounts': connected_accounts,
-        'projects': projects,
+        'task_chart_data': json.dumps(task_chart_data), # JSON para o JS
+        'post_chart_data': json.dumps(post_chart_data), # JSON para o JS
+        'total_projects': client.projects.count(),
+        'total_tasks': all_client_tasks.count(),
+        'total_posts': posts.count(),
+        'total_likes': total_likes,
+        'total_views': total_views,
     }
     return render(request, 'projects/client_metrics.html', context)
 
@@ -826,57 +847,73 @@ class ProcessApprovalAction(View):
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddOperationalTaskAPI(View):
-    """
-    Cria uma tarefa operacional (Briefing) e o objeto SocialPost associado.
-    Aceita uploads de arquivos (imagem de referência).
-    """
     @method_decorator(login_required)
     def post(self, request, *args, **kwargs):
         try:
-            # Como o form tem enctype="multipart/form-data", usamos request.POST e request.FILES
+            # Captura os dados do formulário
             title = request.POST.get('title')
             description = request.POST.get('description', '')
-            project_id = request.POST.get('project')
-            assigned_to_id = request.POST.get('assigned_to')
             
-            # Pega o arquivo de referência (se houver)
+            # Tenta pegar Projeto OU Cliente (um dos dois deve existir)
+            project_id = request.POST.get('project')
+            client_id = request.POST.get('client') 
+            
+            assigned_to_id = request.POST.get('assigned_to')
             reference_image = request.FILES.get('reference_image')
 
-            # Validação Básica
-            if not title or not project_id:
-                return JsonResponse({'status': 'error', 'message': 'Título e Projeto são obrigatórios.'}, status=400)
+            # --- VALIDAÇÃO 1: Título Obrigatório ---
+            if not title:
+                return JsonResponse({'status': 'error', 'message': 'O título é obrigatório.'}, status=400)
 
-            # Busca o Projeto e o Cliente
-            project = get_object_or_404(Project, id=project_id)
-            if not project.client:
-                return JsonResponse({'status': 'error', 'message': 'Este projeto não tem um cliente vinculado.'}, status=400)
+            # --- LÓGICA DE VÍNCULO (Quem é o dono?) ---
+            project = None
+            client = None
 
-            # 1. CRIAR O SOCIAL POST (O "Conteúdo")
-            # Ele nasce ligado ao Cliente do projeto.
-            # A imagem de referência vai para o 'media_file' por enquanto.
+            # Cenário A: Usuário selecionou um Projeto
+            if project_id:
+                try:
+                    project = Project.objects.get(id=project_id)
+                    client = project.client # Tenta pegar o cliente do projeto
+                except Project.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Projeto não encontrado.'}, status=404)
+
+            # Cenário B: Usuário selecionou um Cliente direto (ou Projeto sem cliente)
+            if not client and client_id:
+                try:
+                    client = Client.objects.get(id=client_id)
+                except Client.DoesNotExist:
+                    return JsonResponse({'status': 'error', 'message': 'Cliente não encontrado.'}, status=404)
+
+            # --- VALIDAÇÃO 2: Cliente Obrigatório ---
+            # Para criar um SocialPost, PRECISAMOS de um cliente.
+            if not client:
+                return JsonResponse({
+                    'status': 'error', 
+                    'message': 'É necessário vincular um Cliente (diretamente ou através de um Projeto) para criar uma demanda de conteúdo.'
+                }, status=400)
+
+            # 1. CRIAR O SOCIAL POST
             social_post = SocialPost.objects.create(
-                client=project.client,
-                caption=description, # Usamos o briefing como legenda inicial
+                client=client,
+                caption=description, 
                 media_file=reference_image, 
                 created_by=request.user,
-                approval_status='draft' # Status interno do post
+                approval_status='draft'
             )
 
             # 2. CALCULAR A ORDEM NO KANBAN
-            # Busca a maior ordem na coluna 'briefing' do tipo 'operational'
             max_order = Task.objects.filter(
                 kanban_type='operational', 
                 status='briefing'
             ).aggregate(models.Max('order'))['order__max']
-            
             new_order = (max_order if max_order is not None else -1) + 1
 
-            # 3. CRIAR A TAREFA (O "Card" do Kanban)
+            # 3. CRIAR A TAREFA
             task = Task.objects.create(
                 kanban_type='operational',
-                status='briefing', # Começa sempre na primeira coluna
-                project=project,
-                social_post=social_post, # LIGAÇÃO CRUCIAL: Tarefa -> Post
+                status='briefing',
+                project=project, # Pode ser None
+                social_post=social_post,
                 title=title,
                 description=description,
                 order=new_order,
@@ -884,15 +921,15 @@ class AddOperationalTaskAPI(View):
                 assigned_to_id=assigned_to_id if assigned_to_id else None
             )
 
-            # 4. RETORNO PARA O JAVASCRIPT
             return JsonResponse({
                 'status': 'success',
                 'message': 'Demanda iniciada com sucesso!',
-                'task': task.to_dict() # Retorna os dados para desenhar o card na hora
+                'task': task.to_dict()
             }, status=201)
 
         except Exception as e:
-            # Log do erro para debug (opcional: print(e))
+            # Log do erro real no console do servidor para debug
+            print(f"Erro na API AddOperationalTask: {e}")
             return JsonResponse({'status': 'error', 'message': f"Erro interno: {str(e)}"}, status=500)
 
 # projects/views.py
@@ -910,3 +947,11 @@ def create_post_studio_view(request):
         'connected_accounts': connected_accounts
     }
     return render(request, 'projects/create_post_studio.html', context)
+
+@login_required
+def get_clients_list_api(request):
+    """
+    Retorna uma lista simples de clientes (ID e Nome) para dropdowns.
+    """
+    clients = Client.objects.all().values('id', 'name')
+    return JsonResponse({'clients': list(clients)})

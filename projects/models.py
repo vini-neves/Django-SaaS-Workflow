@@ -76,26 +76,35 @@ class Project(models.Model):
 # --- 3. REDES SOCIAIS (CONTAS) ---
 class SocialAccount(models.Model):
     PLATFORM_CHOICES = [
+        # Redes Sociais
         ('facebook', 'Facebook'),
         ('instagram', 'Instagram'),
         ('linkedin', 'LinkedIn'),
         ('tiktok', 'TikTok'),
-        ('youtube', 'YouTube'),
         ('pinterest', 'Pinterest'),
-        ('x', 'X (Twitter)'),
+        ('youtube', 'YouTube'),
         ('threads', 'Threads'),
+        ('x', 'X (Twitter)'),
+        
+        # Ads / Tráfego Pago
+        ('tiktok_ads', 'TikTok Ads'),
+        ('linkedin_ads', 'LinkedIn Ads'),
+        ('meta_ads', 'Meta Ads'),
+        ('google_ads', 'Google Ads'),
+        
+        # Google Services
+        ('google_my_business', 'Google Meu Negócio'),
+        ('ga4', 'Google Analytics 4'),
     ]
     
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="social_accounts", null=True, blank=True)
-    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES)
+    # ... (o restante da classe continua igual: client, platform, tokens, etc.) ...
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name="social_accounts", null=True, blank=True, verbose_name="Cliente Vinculado")
+    platform = models.CharField(max_length=50, choices=PLATFORM_CHOICES) # Aumentei para 50 por segurança
     account_name = models.CharField(max_length=255, verbose_name="Nome da Conta")
     account_id = models.CharField(max_length=255, verbose_name="ID na Rede Social")
-    
-    # Tokens
     access_token = models.TextField()
     refresh_token = models.TextField(blank=True, null=True)
     token_expires_at = models.DateTimeField(blank=True, null=True)
-    
     is_active = models.BooleanField(default=True)
     created_at = models.DateTimeField(auto_now_add=True)
 
@@ -191,27 +200,29 @@ class SocialPostDestination(models.Model):
 
 # --- 6. TAREFA (KANBAN GERAL E OPERACIONAL) ---
 class Task(models.Model):
-    # Tipo de Kanban
     kanban_type = models.CharField(max_length=20, choices=KANBAN_TYPES, default='general')
-    
-    # Status (Unificado, max_length aumentado para evitar erros)
     status = models.CharField(max_length=50, choices=ALL_STATUS_CHOICES, default='todo')
     
-    # Ligações
-    project = models.ForeignKey(Project, on_delete=models.CASCADE, related_name='tasks')
-    # Se for operacional, liga a um post social
-    social_post = models.OneToOneField(SocialPost, on_delete=models.SET_NULL, null=True, blank=True, related_name='task')
+    social_post = models.ForeignKey('SocialPost', on_delete=models.SET_NULL, null=True, blank=True, related_name='task_link')
     
-    # Dados da Tarefa
+    # CORREÇÃO 1: Permite tarefas sem projeto (obrigatório para posts avulsos)
+    project = models.ForeignKey(
+        Project, 
+        on_delete=models.CASCADE, 
+        related_name='tasks',
+        null=True,  # <--- ESSENCIAL
+        blank=True  # <--- ESSENCIAL
+    )
+    
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
-    order = models.IntegerField(default=0)
     
-    # Datas (Incluindo updated_at corrigido)
+    # CAMPOS DE DATA E ORDENAÇÃO
     created_at = models.DateTimeField(auto_now_add=True)
     updated_at = models.DateTimeField(auto_now=True, verbose_name="Última Atualização")
+    order = models.IntegerField(default=0) 
     
-    # Usuários
+    # CAMPOS DE USUÁRIO
     created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.SET_NULL, null=True, blank=True)
     assigned_to = models.ForeignKey(
         settings.AUTH_USER_MODEL, 
@@ -230,20 +241,32 @@ class Task(models.Model):
         
     def to_dict(self):
         """ Retorna dados para o Frontend (JSON) """
+        
+        # CORREÇÃO 2: Proteção contra erro 'NoneType has no attribute name'
+        project_name = "Sem Projeto"
+        
+        if self.project:
+            project_name = self.project.name
+        elif self.social_post and self.social_post.client:
+            # Se não tem projeto, mas tem post, usa o nome do cliente
+            project_name = f"Cliente: {self.social_post.client.name}"
+
         return {
             'id': self.id,
             'title': self.title,
-            'description': self.description or "",
-            'status': self.status, # O valor interno (ex: 'todo')
-            'status_display': self.get_status_display(), # O valor legível (ex: 'A Fazer')
-            'project_name': self.project.name,
+            'description': self.description or "Nenhuma descrição.",
+            'status': self.status,
+            'status_display': self.get_status_display(),
+            
+            'project_name': project_name, # <--- Usa a variável protegida
+            
             'created_at': self.created_at.strftime('%d/%m/%Y'),
-            'updated_at': self.updated_at.strftime('%d/%m/%Y às %H:%M'),
+            # Proteção extra para data
+            'updated_at': self.updated_at.strftime('%d/%m/%Y') if self.updated_at else "", 
             'assigned_to': self.assigned_to.username if self.assigned_to else None,
-            'assigned_to_initials': self.assigned_to.username[0].upper() if self.assigned_to else '?',
-            'social_post_id': self.social_post.id if self.social_post else None, # Para abrir o preview
+            'assigned_to_initials': self.assigned_to.username[0].upper() if self.assigned_to and self.assigned_to.username else '?',
+            'social_post_id': self.social_post.id if self.social_post else None,
         }
-
 
 # --- 7. EVENTOS DO CALENDÁRIO (SIMPLES) ---
 class CalendarEvent(models.Model):
