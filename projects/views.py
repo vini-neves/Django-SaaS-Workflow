@@ -19,7 +19,8 @@ from .forms import ClientForm, TenantAuthenticationForm, ProjectForm
 from accounts.models import CustomUser
 import secrets
 from django.shortcuts import redirect
-from .services import MetaService
+from .services import MetaService, LinkedInService, TikTokService
+from django.db import connection
 
 GENERAL_STAGES = [
     ('todo', 'A Fazer'),
@@ -592,6 +593,13 @@ def social_dashboard(request):
     """
     Renderiza o painel principal com métricas e lista de posts.
     """
+
+    # --- DEBUG: IMPRIMIR NO TERMINAL ---
+    print(f"🌍 DOMÍNIO ACESSADO: {request.get_host()}")
+    print(f"📂 SCHEMA ATIVO: {connection.schema_name}")
+    print(f"👤 TENANT DETECTADO: {getattr(request, 'tenant', 'Nenhum')}")
+    # -----------------------------------
+
     # 1. Busca dados básicos
     connected_accounts = SocialAccount.objects.all()
     clients = Client.objects.all()
@@ -1034,3 +1042,51 @@ def meta_auth_callback(request):
         error_msg = token_data.get('error', {}).get('message', 'Erro desconhecido')
         messages.error(request, f"Erro ao conectar Facebook: {error_msg}")
         return redirect('social_dashboard')
+
+@login_required
+def linkedin_auth_start(request, client_id):
+    """ Inicia o login com LinkedIn """
+    request.session['linkedin_client_id'] = client_id
+    state = secrets.token_urlsafe(16)
+    request.session['linkedin_oauth_state'] = state
+    
+    service = LinkedInService()
+    url = service.get_auth_url(state)
+    
+    return redirect(url)
+
+@login_required
+def linkedin_auth_callback(request):
+    """ Retorno do LinkedIn """
+    code = request.GET.get('code')
+    state = request.GET.get('state')
+    error = request.GET.get('error')
+
+    if error:
+        messages.error(request, f"Usuário negou acesso ou erro LinkedIn: {error}")
+        return redirect('social_dashboard')
+
+    # Valida State (CSRF)
+    saved_state = request.session.get('linkedin_oauth_state')
+    if not state or state != saved_state:
+        messages.error(request, "Estado inválido (Erro de segurança). Tente novamente.")
+        return redirect('social_dashboard')
+
+    # Recupera o Cliente
+    client_id = request.session.get('linkedin_client_id')
+    client = get_object_or_404(Client, pk=client_id)
+
+    # Processa Token
+    service = LinkedInService()
+    token_data = service.exchange_code_for_token(code)
+
+    if 'access_token' in token_data:
+        account = service.save_account(token_data, client)
+        if account:
+            messages.success(request, f"LinkedIn conectado: {account.account_name}")
+        else:
+            messages.error(request, "Erro ao salvar dados do perfil.")
+    else:
+        messages.error(request, f"Erro ao obter token: {token_data.get('error_description')}")
+
+    return redirect('social_dashboard')

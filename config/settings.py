@@ -54,16 +54,12 @@ SHARED_APPS = [
 ]
 
 TENANT_APPS = [
-    'django.contrib.contenttypes', # Necessário para o admin
-
-    # Nossos apps de inquilino (o 'projects' que já criamos)
+    'django.contrib.contenttypes', 
+    'django.contrib.auth',
     'projects',
-    'django_htmx', # O htmx também pode ser específico
 ]
 
-INSTALLED_APPS = list(SHARED_APPS) + [
-    app for app in TENANT_APPS if app not in SHARED_APPS
-]
+INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in SHARED_APPS]
 
 MIDDLEWARE = [
     'django_tenants.middleware.main.TenantMainMiddleware',
@@ -222,3 +218,11 @@ META_SCOPES = [
     'instagram_manage_insights',
     # 'business_management' 
 ]
+
+# LINKEDIN API
+LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID')
+LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET')
+LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI')
+
+# Escopos: 'openid' (auth), 'profile' (dados), 'email', 'w_member_social' (postar no perfil)
+LINKEDIN_SCOPES = ['openid', 'profile', 'email', 'w_member_social'] 

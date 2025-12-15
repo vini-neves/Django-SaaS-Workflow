@@ -20,11 +20,11 @@ document.addEventListener("DOMContentLoaded", () => {
   const hiddenIdInput = document.getElementById("client_id_hidden");
 
   function clearSocialHighlights() {
-    document.querySelectorAll('.social-connect-item').forEach(item => {
-        item.classList.remove('is-connected');
-        item.title = item.title.replace(' (Conectado)', ''); // Limpa tooltip
+    document.querySelectorAll(".social-connect-item").forEach((item) => {
+      item.classList.remove("is-connected");
+      item.title = item.title.replace(" (Conectado)", ""); // Limpa tooltip
     });
-}
+  }
 
   if (modal && openBtn && closeBtn) {
     // Abrir Modal (Cadastro Limpo)
@@ -100,15 +100,17 @@ document.addEventListener("DOMContentLoaded", () => {
           clearSocialHighlights(); // Limpa primeiro
 
           if (data.connected_platforms && data.connected_platforms.length > 0) {
-              data.connected_platforms.forEach(platform => {
-                  // Procura o elemento pela classe .sc-nome_da_rede
-                  // Ex: .sc-facebook, .sc-instagram
-                  const icon = document.querySelector(`.social-connect-item.sc-${platform}`);
-                  if (icon) {
-                      icon.classList.add('is-connected');
-                      icon.title += " (Conectado)"; // Dica visual ao passar o mouse
-                  }
-              });
+            data.connected_platforms.forEach((platform) => {
+              // Procura o elemento pela classe .sc-nome_da_rede
+              // Ex: .sc-facebook, .sc-instagram
+              const icon = document.querySelector(
+                `.social-connect-item.sc-${platform}`
+              );
+              if (icon) {
+                icon.classList.add("is-connected");
+                icon.title += " (Conectado)"; // Dica visual ao passar o mouse
+              }
+            });
           }
 
           modalTitle.innerText = "Editar Cliente";
@@ -183,17 +185,24 @@ document.addEventListener("DOMContentLoaded", () => {
 
   // --- 6. Conectar Social (Mockup) ---
   window.connectSocial = function (platform) {
+    const clientId = document.getElementById("client_id_hidden").value;
+
+    if (!clientId) {
+      Swal.fire(
+        "Atenção",
+        "Salve o cliente primeiro antes de conectar redes.",
+        "warning"
+      );
+      return;
+    }
+
     if (platform === "facebook" || platform === "instagram") {
-      // Redireciona para nossa rota Django, passando o ID do cliente atual
-      // Assumindo que você tem uma variável 'currentClientId' ou pega do input hidden
-      const clientId = document.getElementById("client_id_hidden").value;
-      if (clientId) {
-        window.location.href = `/meta/connect/${clientId}/`;
-      } else {
-        alert("Salve o cliente primeiro!");
-      }
+      window.location.href = `/meta/connect/${clientId}/`;
+    } else if (platform === "linkedin") {
+      // NOVA ROTA
+      window.location.href = `/linkedin/connect/${clientId}/`;
     } else {
-      alert("Integração em breve...");
+      Swal.fire("Em breve", "Integração em desenvolvimento.", "info");
     }
   };
 });

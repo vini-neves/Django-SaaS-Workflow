@@ -2,6 +2,7 @@
 import requests
 from django.conf import settings
 from .models import SocialAccount
+import urllib.parse
 
 class MetaService:
     BASE_URL = "https://graph.facebook.com/v19.0"
@@ -193,3 +194,119 @@ class MetaService:
         url = f"{self.BASE_URL}/{ig_id}?fields=username,profile_picture_url&access_token={access_token}"
         response = requests.get(url)
         return response.json()
+
+
+class LinkedInService:
+    # URLs Oficiais
+    AUTH_URL = "https://www.linkedin.com/oauth/v2/authorization"
+    TOKEN_URL = "https://www.linkedin.com/oauth/v2/accessToken"
+    USER_INFO_URL = "https://api.linkedin.com/v2/userinfo"
+
+    def get_auth_url(self, state_token):
+        """ Gera a URL do botão 'Conectar LinkedIn' """
+        scope_string = " ".join(settings.LINKEDIN_SCOPES) # LinkedIn usa espaço, não vírgula
+        return (
+            f"{self.AUTH_URL}?"
+            f"response_type=code&"
+            f"client_id={settings.LINKEDIN_CLIENT_ID}&"
+            f"redirect_uri={settings.LINKEDIN_REDIRECT_URI}&"
+            f"state={state_token}&"
+            f"scope={scope_string}"
+        )
+
+    def exchange_code_for_token(self, code):
+        """ Troca o código pelo Access Token """
+        payload = {
+            'grant_type': 'authorization_code',
+            'code': code,
+            'redirect_uri': settings.LINKEDIN_REDIRECT_URI,
+            'client_id': settings.LINKEDIN_CLIENT_ID,
+            'client_secret': settings.LINKEDIN_CLIENT_SECRET
+        }
+        headers = {'Content-Type': 'application/x-www-form-urlencoded'}
+        
+        response = requests.post(self.TOKEN_URL, data=payload, headers=headers)
+        return response.json()
+
+    def get_user_profile(self, access_token):
+        """ Busca dados do usuário (Nome, Foto, Sub/ID) """
+        headers = {'Authorization': f'Bearer {access_token}'}
+        response = requests.get(self.USER_INFO_URL, headers=headers)
+        return response.json()
+
+    def save_account(self, token_data, client_obj):
+        """ Salva a conta no banco """
+        access_token = token_data.get('access_token')
+        if not access_token:
+            return None
+
+        # Busca dados do perfil
+        profile_data = self.get_user_profile(access_token)
+        
+        # O ID único no OpenID Connect chama-se 'sub'
+        linkedin_id = profile_data.get('sub')
+        name = profile_data.get('name')
+        picture = profile_data.get('picture', '')
+
+        if not linkedin_id:
+            return None
+
+        # Salva no banco (Tabela SocialAccount)
+        account, created = SocialAccount.objects.update_or_create(
+            account_id=linkedin_id,
+            client=client_obj,
+            defaults={
+                'platform': 'linkedin',
+                'account_name': name,
+                'access_token': access_token,
+                # O token do LinkedIn dura 60 dias, depois precisa renovar
+                'is_active': True 
+            }
+        )
+        return account
+
+class TikTokService:
+    # Endpoints da API V2
+    AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
+    TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
+    
+    def get_auth_url(self, state_token):
+        # Escopos necessários para ler perfil e publicar
+        scopes = [
+            "user.info.basic",
+            "video.upload",
+            "video.publish" 
+        ]
+        
+        params = {
+            "client_key": settings.TIKTOK_CLIENT_KEY,
+            "response_type": "code",
+            "scope": ",".join(scopes),
+            "redirect_uri": settings.TIKTOK_REDIRECT_URI,
+            "state": state_token,
+        }
+        
+        # O TikTok exige que a URL seja codificada corretamente
+        url = f"{self.AUTH_URL}?{urllib.parse.urlencode(params)}"
+        return url
+
+    def get_access_token(self, code):
+        data = {
+            "client_key": settings.TIKTOK_CLIENT_KEY,
+            "client_secret": settings.TIKTOK_CLIENT_SECRET,
+            "code": code,
+            "grant_type": "authorization_code",
+            "redirect_uri": settings.TIKTOK_REDIRECT_URI,
+        }
+        
+        headers = {
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+
+        response = requests.post(self.TOKEN_URL, data=data, headers=headers)
+        
+        if response.status_code == 200:
+            return response.json() # Retorna o access_token e open_id
+        else:
+            print(f"Erro TikTok: {response.text}") # Debug
+            return None
