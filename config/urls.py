@@ -16,15 +16,18 @@ urlpatterns = [
     path('google-auth-start/', accounts_views.google_auth_start, name='google_auth_start'),
     path('google-auth-callback/', accounts_views.google_auth_callback, name='google_auth_callback'),
 
-    # Suas URLs do Facebook (já existentes)
+    #URLs do Facebook
     path('meta/connect/<int:client_id>/', project_views.meta_auth_start, name='meta_auth_start'),
     path('meta-callback/', project_views.meta_auth_callback, name='meta_auth_callback'),
 
     #LinkedIn URLs
     path('linkedin/connect/<int:client_id>/', project_views.linkedin_auth_start, name='linkedin_auth_start'),
     path('linkedin-callback/', project_views.linkedin_auth_callback, name='linkedin_auth_callback'),
-
-    # 3. O 'projects.urls' (do tenant) continua separado
+    
+    #TikTok URLs
+    path('tiktok/connect/<int:client_id>/', project_views.tiktok_auth_start, name='tiktok_auth_start'),
+    path('tiktok-callback/', project_views.tiktok_auth_callback, name='tiktok_auth_callback'),
+    
     path('', include('projects.urls')),
 ]
 

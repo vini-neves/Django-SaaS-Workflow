@@ -266,31 +266,40 @@ class LinkedInService:
         return account
 
 class TikTokService:
-    # Endpoints da API V2
+    # Endpoints da API V2 do TikTok
     AUTH_URL = "https://www.tiktok.com/v2/auth/authorize/"
     TOKEN_URL = "https://open.tiktokapis.com/v2/oauth/token/"
+    USER_INFO_URL = "https://open.tiktokapis.com/v2/user/info/"
     
     def get_auth_url(self, state_token):
-        # Escopos necessários para ler perfil e publicar
+        """
+        Gera a URL para o usuário clicar e autorizar o app.
+        """
+        # Escopos necessários para ler perfil e postar vídeos
         scopes = [
             "user.info.basic",
-            "video.upload",
-            "video.publish" 
+            # "video.upload",
+            # "video.publish"
         ]
         
+        # AQUI ESTÁ A CORREÇÃO (client_key em vez de client_id)
         params = {
-            "client_key": settings.TIKTOK_CLIENT_KEY,
+            "client_key": settings.TIKTOK_CLIENT_KEY, 
             "response_type": "code",
-            "scope": ",".join(scopes),
+            "scope": ",".join(scopes), # Separa os escopos por vírgula
             "redirect_uri": settings.TIKTOK_REDIRECT_URI,
             "state": state_token,
         }
         
-        # O TikTok exige que a URL seja codificada corretamente
-        url = f"{self.AUTH_URL}?{urllib.parse.urlencode(params)}"
-        return url
+        # Converte o dicionário para formato de URL (ex: key=valor&key2=valor2)
+        url_params = urllib.parse.urlencode(params)
+        
+        return f"{self.AUTH_URL}?{url_params}"
 
     def get_access_token(self, code):
+        """
+        Troca o 'code' recebido no callback pelo 'access_token' definitivo.
+        """
         data = {
             "client_key": settings.TIKTOK_CLIENT_KEY,
             "client_secret": settings.TIKTOK_CLIENT_SECRET,
@@ -300,13 +309,44 @@ class TikTokService:
         }
         
         headers = {
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
+            "Cache-Control": "no-cache"
         }
 
-        response = requests.post(self.TOKEN_URL, data=data, headers=headers)
+        try:
+            response = requests.post(self.TOKEN_URL, data=data, headers=headers)
+            response.raise_for_status() # Levanta erro se não for 200 OK
+            return response.json() # Retorna o JSON com access_token e open_id
+            
+        except requests.exceptions.RequestException as e:
+            print(f"❌ Erro ao obter token do TikTok: {e}")
+            if response is not None:
+                print(f"Detalhes do erro: {response.text}")
+            return None
+
+    def get_user_info(self, access_token):
+        """
+        (Opcional) Busca nome e foto do usuário para salvar no banco.
+        """
+        fields = ["display_name", "avatar_url"]
         
-        if response.status_code == 200:
-            return response.json() # Retorna o access_token e open_id
-        else:
-            print(f"Erro TikTok: {response.text}") # Debug
+        params = {
+            "fields": ",".join(fields)
+        }
+        
+        headers = {
+            "Authorization": f"Bearer {access_token}"
+        }
+
+        try:
+            response = requests.get(self.USER_INFO_URL, params=params, headers=headers)
+            if response.status_code == 200:
+                data = response.json().get('data', {})
+                return {
+                    'name': data.get('display_name', 'Usuário TikTok'),
+                    'avatar': data.get('avatar_url', '')
+                }
+            return None
+        except Exception as e:
+            print(f"Erro ao buscar info do usuário: {e}")
             return None

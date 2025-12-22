@@ -223,6 +223,9 @@ META_SCOPES = [
 LINKEDIN_CLIENT_ID = config('LINKEDIN_CLIENT_ID')
 LINKEDIN_CLIENT_SECRET = config('LINKEDIN_CLIENT_SECRET')
 LINKEDIN_REDIRECT_URI = config('LINKEDIN_REDIRECT_URI')
+LINKEDIN_SCOPES = ['openid', 'profile', 'email', 'w_member_social']
 
-# Escopos: 'openid' (auth), 'profile' (dados), 'email', 'w_member_social' (postar no perfil)
-LINKEDIN_SCOPES = ['openid', 'profile', 'email', 'w_member_social'] 
+# TIKTOK SETTINGS
+TIKTOK_CLIENT_KEY = config('TIKTOK_CLIENT_KEY')
+TIKTOK_CLIENT_SECRET = config('TIKTOK_CLIENT_SECRET')
+TIKTOK_REDIRECT_URI = config('TIKTOK_REDIRECT_URI')
