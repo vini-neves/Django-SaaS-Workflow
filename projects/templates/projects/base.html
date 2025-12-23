@@ -1,4 +1,5 @@
-{# projects/templates/projects/base.html #} {% load static %}
+{# projects/templates/projects/base.html #}
+{% load static %}
 <!DOCTYPE html>
 <html lang="pt-br">
   <head>
@@ -11,23 +12,24 @@
 
     <title>{% block title %}Plataforma{% endblock %}</title>
 
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/css/bootstrap.min.css" rel="stylesheet" />
+
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css" />
+
+    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+
     <style>
       :root {
-          /* Se a variável não vier do banco, usa a cor padrão (default) */
-          --primary-color: {{ agency_primary_color|default:"#333366" }};
-          --secondary-color: {{ agency_secondary_color|default:"#007bff" }};
-          --text-on-primary: #ffffff;
-          --text-on-secondary: #ffffff;
-          --bg-light: #f8f9fa;
-          --border-color: #dee2e6;
-          --sidebar-width: 250px;
+        /* Se a variável não vier do banco, usa a cor padrão (default) */
+        --primary-color: {{ agency_primary_color|default:"#333366" }};
+        --secondary-color: {{ agency_secondary_color|default:"#007bff" }};
+        --text-on-primary: #ffffff;
+        --text-on-secondary: #ffffff;
+        --bg-light: #f8f9fa;
+        --border-color: #dee2e6;
+        --sidebar-width: 250px;
       }
-  </style>
-    <link
-      rel="stylesheet"
-      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.2/css/all.min.css"
-    />
-    <link rel="stylesheet" href="{% static 'css/base.css' %}" />
+    </style>
 
     {% block extra_css %}{% endblock %}
   </head>
@@ -53,6 +55,7 @@
       {% endfor %}
     </div>
     {% endif %}
+
     <div class="app-container">
       <aside class="sidebar">
         <div class="logo-container">
@@ -149,12 +152,13 @@
     <div
       id="metrics-client-modal"
       class="modal"
-      style="display: none; z-index: 2000"
+      style="display: none; z-index: 2000; background: rgba(0,0,0,0.5);"
     >
-      <div class="modal-content" style="max-width: 400px; text-align: center">
+      <div class="modal-content" style="max-width: 400px; text-align: center; margin: 15% auto; background: #fff; padding: 20px; border-radius: 10px;">
         <span
           class="close-button"
           onclick="document.getElementById('metrics-client-modal').style.display='none'"
+          style="float: right; cursor: pointer; font-size: 20px;"
           >&times;</span
         >
         <h2 style="color: var(--primary-color)">Visualizar Métricas</h2>
@@ -164,66 +168,61 @@
 
         <select
           id="metrics-client-select"
-          class="form-input"
-          style="margin-bottom: 20px"
+          class="form-control"
+          style="margin-bottom: 20px; width: 100%; padding: 10px;"
         >
           <option value="" disabled selected>Carregando clientes...</option>
         </select>
 
         <button
           id="btn-go-metrics"
-          class="form-button"
-          style="background-color: var(--primary-color)"
+          class="btn btn-primary"
+          style="background-color: var(--primary-color); width: 100%;"
         >
           Ver Dashboard
         </button>
       </div>
     </div>
 
-    <script src="https://unpkg.com/feather-icons"></script>
-    <script>
-      feather.replace(); // Ativa os ícones
-    </script>
+    <script src="https://code.jquery.com/jquery-3.7.0.min.js"></script>
+
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.3.0/dist/js/bootstrap.bundle.min.js"></script>
+
     <script src="https://cdn.jsdelivr.net/npm/sweetalert2@11"></script>
+
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>feather.replace();</script>
 
     <script>
       document.addEventListener("DOMContentLoaded", function () {
+        // Toggle da Sidebar Kanban
         const toggleGroup = document.getElementById("kanban-group-toggle");
-        const submenu = toggleGroup.querySelector(".submenu");
-
-        if (toggleGroup && submenu) {
-          toggleGroup
-            .querySelector(".nav-link-header")
-            .addEventListener("click", () => {
-              const is_open = toggleGroup.classList.toggle("open");
-              submenu.style.maxHeight = is_open
-                ? submenu.scrollHeight + "px"
-                : "0";
+        if (toggleGroup) {
+            const submenu = toggleGroup.querySelector(".submenu");
+            toggleGroup.querySelector(".nav-link-header").addEventListener("click", () => {
+                const is_open = toggleGroup.classList.toggle("open");
+                submenu.style.maxHeight = is_open ? submenu.scrollHeight + "px" : "0";
             });
 
-          if (toggleGroup.classList.contains("open")) {
-            submenu.style.maxHeight = submenu.scrollHeight + "px";
-          }
+            if (toggleGroup.classList.contains("open")) {
+                submenu.style.maxHeight = submenu.scrollHeight + "px";
+            }
         }
-      });
-    </script>
 
-    <script>
-      document.addEventListener("DOMContentLoaded", () => {
+        // Lógica do Modal de Métricas Global
         const metricsBtn = document.getElementById("nav-metrics-btn");
         const metricsModal = document.getElementById("metrics-client-modal");
         const clientSelect = document.getElementById("metrics-client-select");
         const goBtn = document.getElementById("btn-go-metrics");
 
         const CLIENT_LIST_API = "{% url 'get_clients_list_api' %}";
-        // Safe replace logic for URL
         const raw_metrics_url = "{% url 'client_metrics' 0 %}";
         const METRICS_URL_BASE = raw_metrics_url.replace("/0/metrics/", "/");
 
         if (metricsBtn) {
           metricsBtn.addEventListener("click", async (e) => {
             e.preventDefault();
-            metricsModal.style.display = "flex";
+            metricsModal.style.display = "block"; // Usando block para garantir visibilidade
 
             try {
               const response = await fetch(CLIENT_LIST_API);
@@ -249,7 +248,6 @@
           goBtn.addEventListener("click", () => {
             const clientId = clientSelect.value;
             if (clientId) {
-              // Correctly constructs URL: /clients/ID/metrics/
               window.location.href = `${METRICS_URL_BASE}${clientId}/metrics/`;
             } else {
               alert("Por favor, selecione um cliente.");
@@ -257,6 +255,7 @@
           });
         }
 
+        // Fecha modal ao clicar fora (corrigido para não usar style.display none direto se for bootstrap, mas aqui é vanilla)
         window.addEventListener("click", (e) => {
           if (e.target === metricsModal) metricsModal.style.display = "none";
         });

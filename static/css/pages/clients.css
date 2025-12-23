@@ -1,0 +1,308 @@
+/* --- Variáveis Locais --- */
+:root {
+    --c-blue: #0099ff;
+    --c-dark: #1f2937;
+    --c-green: #10b981;
+    --c-red: #ef4444;
+    --c-gray: #6b7280;
+    --c-bg: #f3f4f6;
+    --c-border: #e5e7eb;
+}
+
+/* --- Layout e Header --- */
+.page-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 30px;
+}
+
+.page-title h1 { font-size: 1.5rem; font-weight: 700; color: var(--c-dark); margin: 0; }
+.page-title p { color: var(--c-gray); margin: 5px 0 0 0; }
+
+.btn-add-client {
+    background-color: var(--primary-color);;
+    color: white;
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    border: none;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: 0.2s;
+}
+.btn-add-client:hover { background-color: var(--secondary-color); color: white; }
+
+/* --- Tabela Moderna (Card Style) --- */
+.modern-table-container { overflow-x: auto; padding-bottom: 20px; }
+.modern-table { width: 100%; border-collapse: separate; border-spacing: 0 12px; }
+
+.modern-table thead th {
+    text-align: left; padding: 0 20px 10px; color: var(--c-gray);
+    font-weight: 600; font-size: 0.85rem; text-transform: uppercase;
+}
+
+.modern-table tbody tr {
+    background-color: #fff;
+    box-shadow: 0 2px 8px rgba(0,0,0,0.04);
+    border-radius: 12px;
+    transition: transform 0.2s;
+}
+.modern-table tbody tr:hover { transform: translateY(-2px); box-shadow: 0 4px 12px rgba(0,0,0,0.08); }
+
+.modern-table td { padding: 20px; vertical-align: middle; color: var(--c-dark); }
+.modern-table td:first-child { border-top-left-radius: 12px; border-bottom-left-radius: 12px; }
+.modern-table td:last-child { border-top-right-radius: 12px; border-bottom-right-radius: 12px; }
+
+/* --- Componentes da Tabela --- */
+.client-info { display: flex; align-items: center; gap: 15px; }
+.client-avatar {
+    width: 42px; height: 42px; background-color: #dbeafe; color: var(--primary-color);;
+    border-radius: 50%; display: flex; align-items: center; justify-content: center;
+    font-weight: 700; font-size: 1rem;
+}
+.client-name { font-weight: 600; display: block; }
+
+.progress-bar-bg {
+    height: 6px; background-color: #e5e7eb; border-radius: 10px;
+    width: 120px; margin-bottom: 6px; overflow: hidden;
+}
+.progress-bar-fill { height: 100%; background-color: var(--secondary-color);; border-radius: 10px; }
+.contract-dates { font-size: 0.75rem; color: var(--c-gray); }
+
+.social-list { display: flex; gap: 6px; }
+.social-icon {
+    width: 26px; height: 26px; border-radius: 50%; display: flex;
+    align-items: center; justify-content: center; color: white; font-size: 0.8rem;
+}
+/* Cores Sociais */
+.bg-insta { background: linear-gradient(45deg, #f09433, #bc1888); }
+.bg-fb { background: #1877f2; }
+.bg-in { background: #0077b5; }
+.bg-tik { background: #000; }
+.bg-yt { background: #ff0000; }
+.bg-x { background: #000; }
+
+.badge { padding: 6px 12px; border-radius: 20px; font-size: 0.8rem; font-weight: 600; }
+.badge-active { background: #d1fae5; color: #065f46; }
+.badge-inactive { background: #f3f4f6; color: #6b7280; }
+
+.action-btn {
+    width: 32px; height: 32px; border-radius: 8px; border: none;
+    background: #f3f4f6; color: var(--c-gray); cursor: pointer;
+    margin-left: 6px; transition: 0.2s;
+}
+.action-btn:hover { background: #e5e7eb; color: var(--c-dark); }
+.action-btn.delete:hover { background: #fee2e2; color: var(--c-red); }
+
+/* --- MODAL DE CADASTRO (Corrigido) --- */
+
+/* Ajuste da largura e sombra */
+.modal-dialog {
+    max-width: 900px; /* Largura fixa boa para 2 colunas */
+    margin: 1.75rem auto;
+}
+
+.custom-modal-content {
+    border-radius: 16px;
+    border: none;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.2);
+    overflow: hidden; /* Garante que nada vaze */
+    background: #fff;
+}
+
+.modal-header {
+    border-bottom: 1px solid var(--c-border);
+    padding: 20px 30px;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background-color: #fff;
+}
+
+.modal-title {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: var(--c-dark);
+    margin: 0;
+}
+
+/* Botão de Fechar Nativo do Bootstrap */
+.btn-close {
+    background: transparent url("data:image/svg+xml,%3csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 16 16' fill='%23000'%3e%3cpath d='M.293.293a1 1 0 0 1 1.414 0L8 6.586 14.293.293a1 1 0 1 1 1.414 1.414L9.414 8l6.293 6.293a1 1 0 0 1-1.414 1.414L8 9.414l-6.293 6.293a1 1 0 0 1-1.414-1.414L6.586 8 .293 1.707a1 1 0 0 1 0-1.414z'/%3e%3c/svg%3e") center/1em auto no-repeat;
+    opacity: 0.5;
+    border: 0;
+    width: 1em;
+    height: 1em;
+    padding: 0.5em;
+    cursor: pointer;
+}
+.btn-close:hover { opacity: 1; }
+
+.modal-body {
+    padding: 30px;
+    background-color: #fff;
+}
+
+/* Layout de Duas Colunas */
+.modal-grid {
+    display: grid;
+    grid-template-columns: 1.2fr 1fr; /* Esquerda maior, direita menor */
+    gap: 40px;
+}
+
+/* Coluna Esquerda */
+.col-left {
+    padding-right: 20px;
+    border-right: 1px solid var(--c-border); /* Linha divisória vertical */
+}
+
+/* Coluna Direita */
+.col-right {
+    padding-left: 10px;
+}
+
+/* Inputs */
+.form-group { margin-bottom: 15px; }
+.form-group label {
+    font-size: 0.85rem;
+    font-weight: 600;
+    margin-bottom: 6px;
+    color: var(--c-dark);
+    display: block;
+}
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    font-size: 0.9rem;
+    border: 1px solid var(--c-border);
+    border-radius: 8px;
+    background-color: #fff;
+    color: var(--c-dark);
+}
+
+/* Datas lado a lado */
+.date-range {
+    display: grid;
+    grid-template-columns: 1fr auto 1fr;
+    gap: 10px;
+    align-items: center;
+}
+
+/* Upload Box */
+.upload-box {
+    border: 1px dashed var(--c-gray);
+    background-color: #f9fafb;
+    border-radius: 10px;
+    padding: 20px;
+    text-align: center;
+    cursor: pointer;
+    transition: 0.2s;
+}
+.upload-box:hover {
+    border-color: var(--primary-color);;
+    background-color: #eff6ff;
+}
+.upload-icon { font-size: 20px; color: var(--primary-color);; margin-bottom: 8px; }
+.upload-text { font-size: 0.85rem; font-weight: 500; color: var(--c-dark); }
+.upload-text span { color: var(--primary-color);; }
+.upload-hint { font-size: 0.75rem; color: #9ca3af; display: block; margin-top: 4px; }
+
+/* Toggles Sociais */
+.social-section-title {
+    font-size: 0.95rem;
+    font-weight: 700;
+    margin-bottom: 15px;
+    color: var(--c-dark);
+}
+
+.social-toggle-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+}
+
+.toggle-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 10px 15px;
+    border: 1px solid var(--c-border);
+    border-radius: 10px;
+    background: #fff;
+}
+
+.toggle-info {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    font-weight: 500;
+    font-size: 0.9rem;
+}
+
+.toggle-icon { font-size: 1.2rem; }
+
+/* Switch iOS Style */
+.switch { position: relative; display: inline-block; width: 44px; height: 24px; }
+.switch input { opacity: 0; width: 0; height: 0; }
+.slider {
+    position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0;
+    background-color: #e5e7eb; transition: .3s; border-radius: 34px;
+}
+.slider:before {
+    position: absolute; content: ""; height: 20px; width: 20px; left: 2px; bottom: 2px;
+    background-color: white; transition: .3s; border-radius: 50%; box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+}
+input:checked + .slider { background-color: var(--primary-color);; }
+input:checked + .slider:before { transform: translateX(20px); }
+
+/* Rodapé */
+.modal-footer {
+    padding: 15px 30px 25px;
+    border-top: none;
+    display: flex;
+    justify-content: flex-end;
+    gap: 10px;
+    background-color: #fff;
+}
+
+.btn-cancel {
+    background: #fff;
+    border: 1px solid var(--c-border);
+    color: var(--c-dark);
+    padding: 10px 20px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-save {
+    background: var(--primary-color);;
+    border: none;
+    color: #fff;
+    padding: 10px 25px;
+    border-radius: 8px;
+    font-weight: 600;
+    cursor: pointer;
+}
+.btn-save:hover { background: var(--secondary-color); }
+
+/* --- CORREÇÃO FINAL DE BLOQUEIO --- */
+
+/* 1. Por padrão, o modal DEVE estar invisível e sem bloquear cliques */
+#clientModal {
+    display: none; 
+    z-index: -1; /* Joga para trás de tudo se algo der errado */
+}
+
+/* 2. Quando o Bootstrap adicionar a classe 'show', aí sim ele aparece */
+#clientModal.show {
+    display: block;
+    z-index: 1055; /* Traz para frente */
+}
+
+/* 3. Garante que o fundo escuro não cubra o modal */
+.modal-backdrop {
+    z-index: 1050;
+}
