@@ -12,6 +12,7 @@ https://docs.djangoproject.com/en/5.2/ref/settings/
 
 from pathlib import Path
 from decouple import config
+import os
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -24,7 +25,7 @@ BASE_DIR = Path(__file__).resolve().parent.parent
 SECRET_KEY = config('SECRET_KEY')
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = False
 
 ALLOWED_HOSTS = [
     'brainz.localhost', 
@@ -33,7 +34,8 @@ ALLOWED_HOSTS = [
     'localhost', 
     '127.0.0.1',
     'randolph-governable-ayana.ngrok-free.dev',
-    '.ngrok-free.app', # Para garantir compatibilidade futura   
+    '.ngrok-free.app',# Para garantir compatibilidade futura 
+    '31.97.175.182',
     ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -71,6 +73,7 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
+    "whitenoise.middleware.WhiteNoiseMiddleware",
 
 ]
 
@@ -154,6 +157,7 @@ USE_TZ = True
 # https://docs.djangoproject.com/en/5.2/howto/static-files/
 
 STATIC_URL = 'static/'
+STATIC_ROOT = os.path.join(BASE_DIR, 'static_root')
 
 # Default primary key field type
 # https://docs.djangoproject.com/en/5.2/ref/settings/#default-auto-field
