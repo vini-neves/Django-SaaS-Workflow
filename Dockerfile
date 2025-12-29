@@ -28,6 +28,12 @@ ENV EMAIL_HOST_USER=dummy_email_user
 ENV EMAIL_HOST_PASSWORD=dummy_email_password
 ENV EMAIL_USE_TLS=True
 
+# 4. Meta / Facebook (O erro atual)
+ENV META_APP_ID=dummy_meta_id
+ENV META_APP_SECRET=dummy_meta_secret
+ENV META_ACCESS_TOKEN=dummy_meta_token
+ENV META_ACCOUNT_ID=dummy_account_id
+
 # Roda o collectstatic
 RUN python manage.py collectstatic --noinput
 
