@@ -49,4 +49,4 @@ ENV TIKTOK_REDIRECT_URI=http://localhost/dummy-tiktok
 RUN python manage.py collectstatic --noinput
 
 # Comando final
-CMD ["tail", "-f", "/dev/null"]
+CMD ["gunicorn", "--bind", "0.0.0.0:3000", "config.wsgi:application"]
