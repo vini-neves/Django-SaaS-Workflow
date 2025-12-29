@@ -17,23 +17,33 @@ ENV DATABASE_PASSWORD=dummy_password
 ENV DATABASE_HOST=localhost
 ENV DATABASE_PORT=5432
 
-# 2. Google OAuth (O erro atual)
+# 2. Google OAuth
 ENV GOOGLE_OAUTH_CLIENT_ID=dummy_google_id
 ENV GOOGLE_OAUTH_CLIENT_SECRET=dummy_google_secret
 
-# 3. Email (Prevenindo o próximo erro provável)
+# 3. Email
 ENV EMAIL_HOST=localhost
 ENV EMAIL_PORT=587
 ENV EMAIL_HOST_USER=dummy_email_user
 ENV EMAIL_HOST_PASSWORD=dummy_email_password
 ENV EMAIL_USE_TLS=True
 
-# 4. Meta / Facebook (O erro atual)
+# 4. Meta / Facebook
 ENV META_APP_ID=dummy_meta_id
 ENV META_APP_SECRET=dummy_meta_secret
 ENV META_ACCESS_TOKEN=dummy_meta_token
 ENV META_ACCOUNT_ID=dummy_account_id
 ENV META_REDIRECT_URI=http://localhost/dummy-callback
+
+# 5. LinkedIn
+ENV LINKEDIN_CLIENT_ID=dummy_linkedin_id
+ENV LINKEDIN_CLIENT_SECRET=dummy_linkedin_secret
+ENV LINKEDIN_REDIRECT_URI=http://localhost/dummy-linkedin
+
+# 6. TikTok
+ENV TIKTOK_CLIENT_KEY=dummy_tiktok_key
+ENV TIKTOK_CLIENT_SECRET=dummy_tiktok_secret
+ENV TIKTOK_REDIRECT_URI=http://localhost/dummy-tiktok
 
 # Roda o collectstatic
 RUN python manage.py collectstatic --noinput
