@@ -34,7 +34,7 @@ ALLOWED_HOSTS = [
     'localhost', 
     '127.0.0.1',
     'randolph-governable-ayana.ngrok-free.dev',
-    '.ngrok-free.app',# Para garantir compatibilidade futura 
+    '.ngrok-free.app',
     '31.97.175.182',
     ]
 
@@ -46,6 +46,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 SHARED_APPS = [
     'django_tenants',
+    'tenants',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -66,6 +67,7 @@ INSTALLED_APPS = list(SHARED_APPS) + [app for app in TENANT_APPS if app not in S
 MIDDLEWARE = [
     'django_tenants.middleware.main.TenantMainMiddleware',
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -73,8 +75,6 @@ MIDDLEWARE = [
     'django.contrib.messages.middleware.MessageMiddleware',
     'django.middleware.clickjacking.XFrameOptionsMiddleware',
     'django_htmx.middleware.HtmxMiddleware',
-    "whitenoise.middleware.WhiteNoiseMiddleware",
-
 ]
 
 TENANT_MODEL = "accounts.Agency" 
@@ -139,6 +139,7 @@ AUTH_PASSWORD_VALIDATORS = [
     },
 ]
 
+ROOT_URLCONF = 'config.urls'
 
 # Internationalization
 # https://docs.djangoproject.com/en/5.2/topics/i18n/
