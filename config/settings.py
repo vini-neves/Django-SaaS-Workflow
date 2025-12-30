@@ -28,6 +28,7 @@ SECRET_KEY = config('SECRET_KEY')
 DEBUG = False
 
 ALLOWED_HOSTS = [
+    'app.brainzhub.com.br',
     'brainz.localhost', 
     'tenant2.localhost', 
     'tenant1.localhost', 
@@ -36,6 +37,7 @@ ALLOWED_HOSTS = [
     'randolph-governable-ayana.ngrok-free.dev',
     '.ngrok-free.app',
     '31.97.175.182',
+    '*',
     ]
 
 CSRF_TRUSTED_ORIGINS = [
@@ -233,3 +235,15 @@ LINKEDIN_SCOPES = ['openid', 'profile', 'email', 'w_member_social']
 TIKTOK_CLIENT_KEY = config('TIKTOK_CLIENT_KEY')
 TIKTOK_CLIENT_SECRET = config('TIKTOK_CLIENT_SECRET')
 TIKTOK_REDIRECT_URI = config('TIKTOK_REDIRECT_URI')
+
+
+# --- CONFIGURAÇÕES DE PROXY (Obrigatório para EasyPanel) ---
+# Diz ao Django para confiar no cabeçalho Host que o EasyPanel envia
+USE_X_FORWARDED_HOST = True
+# Diz ao Django que a conexão é segura (HTTPS)
+SECURE_PROXY_SSL_HEADER = ('HTTP_X_FORWARDED_PROTO', 'https')
+
+# --- DEBUG DE TENANTS ---
+# Se o domínio não for encontrado, exibe o site público em vez de 404.
+# Isso vai nos provar se o erro é de domínio ou de rota.
+SHOW_PUBLIC_IF_NO_TENANT_FOUND = True
