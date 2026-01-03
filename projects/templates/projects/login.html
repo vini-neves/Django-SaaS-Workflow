@@ -47,7 +47,11 @@
         <div class="form-container">
             
             <div class="mobile-logo-header">
-                <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 50px;"/> {{ request.tenant.name }}
+                {% if agency_logo %}
+                    <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 50px;"/> {{ request.tenant.name }}
+                {% else %}
+                    <h1>{{ request.tenant.name }}</h1>
+                {% endif %}
             </div>
 
             <div class="login-header">
