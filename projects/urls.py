@@ -20,8 +20,9 @@ urlpatterns = [
 
     # --- CALENDÁRIO ---
     path('calendar/', views.calendar_view, name='calendar_view'),
-    path('api/calendar/get-events/', views.get_calendar_events, name='get_calendar_events'),
-    path('api/calendar/add-event/', views.add_calendar_event, name='add_calendar_event'),
+    path('api/calendar/events/', views.get_calendar_events, name='get_calendar_events'),
+    path('api/calendar/add/', views.add_calendar_event, name='add_calendar_event'),
+    path('api/calendar/clients/', views.get_clients_for_select, name='get_clients_for_select'),
 
     # --- POSTAGENS E SOCIAL MEDIA ---
     path('social/', views.social_dashboard, name='social_dashboard'),

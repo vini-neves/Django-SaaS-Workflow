@@ -30,10 +30,11 @@ class TaskAdmin(admin.ModelAdmin):
     search_fields = ('title', 'description')
     list_display_links = ('title', 'project')
 
-@admin.register(CalendarEvent)
 class CalendarEventAdmin(admin.ModelAdmin):
-    list_display = ('title', 'start_date', 'created_by')
-    list_filter = ('start_date', 'created_by')
+    list_display = ('title', 'client', 'date', 'platform', 'status', 'post_type')
+    list_filter = ('status', 'platform', 'post_type', 'date')
+    search_fields = ('title', 'client__name', 'caption')
+    date_hierarchy = 'date'
 
 @admin.register(SocialAccount)
 class SocialAccountAdmin(admin.ModelAdmin):

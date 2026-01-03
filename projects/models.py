@@ -270,16 +270,43 @@ class Task(models.Model):
 
 # --- 7. EVENTOS DO CALENDÁRIO (SIMPLES) ---
 class CalendarEvent(models.Model):
-    title = models.CharField(max_length=255)
-    start_date = models.DateField()
-    description = models.TextField(blank=True, null=True)
-    created_by = models.ForeignKey(settings.AUTH_USER_MODEL, on_delete=models.CASCADE)
+    PLATFORM_CHOICES = [
+        ('instagram', 'Instagram'),
+        ('facebook', 'Facebook'),
+        ('linkedin', 'LinkedIn'),
+        ('tiktok', 'TikTok'),
+        ('youtube', 'YouTube'),
+    ]
+
+    TYPE_CHOICES = [
+        ('Feed', 'Feed'),
+        ('Story', 'Story'),
+        ('Reels', 'Reels'),
+    ]
+
+    STATUS_CHOICES = [
+        ('Draft', 'Rascunho'),
+        ('Pending', 'Pendente Aprovação'),
+        ('Scheduled', 'Agendado'),
+        ('Published', 'Publicado'),
+    ]
+
+    # Conexão real com o Cliente
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='events')
+    
+    title = models.CharField(max_length=200, blank=True) # Título pode ser vazio se tiver cliente
+    date = models.DateField()
+    time = models.TimeField(default="09:00")
+    
+    platform = models.CharField(max_length=20, choices=PLATFORM_CHOICES, default='instagram')
+    post_type = models.CharField(max_length=10, choices=TYPE_CHOICES, default='Feed')
+    status = models.CharField(max_length=20, choices=STATUS_CHOICES, default='Draft')
+    
+    # Novos campos para o Modal Completo
+    caption = models.TextField(blank=True, null=True)
+    media = models.ImageField(upload_to='posts_media/', blank=True, null=True)
+
     created_at = models.DateTimeField(auto_now_add=True)
 
-    def to_dict(self):
-        return {
-            'id': self.id,
-            'title': self.title,
-            'date': self.start_date.strftime('%Y-%m-%d'),
-            'description': self.description,
-        }
+    def __str__(self):
+        return f"{self.client.name} - {self.date}"

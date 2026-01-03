@@ -11,7 +11,7 @@
 {% block content %}
 
     <div class="dashboard-header">
-        <h1 id="dynamic-greeting" data-username="{{ user.username }}">Olá, {{ user.username }}!</h1>
+        <h1 id="dynamic-greeting" data-username="{{ user.first_name }}">Olá, {{ user.first_name }}!</h1>
         <p>Aqui está um resumo da sua agência hoje.</p>
     </div>
 
@@ -44,23 +44,7 @@
         </div>
     </div>
 
-    <div class="widget-grid">
-
-        <div class="widget-card">
-            <div class="widget-header">
-                <h3><i data-feather="calendar" style="width:18px; height:18px; margin-right: 5px;"></i> Próximos Eventos</h3>
-            </div>
-            <ul class="widget-list">
-                {% for event in upcoming_events %}
-                    <li class="widget-list-item">
-                        <span class="item-title">{{ event.title }}</span>
-                        <span class="item-date">{{ event.start_date|date:"d M, Y" }}</span>
-                    </li>
-                {% empty %}
-                    <li class="empty-message">Nenhum evento futuro agendado.</li>
-                {% endfor %}
-            </ul>
-        </div>
+    
 
         
 

@@ -6,60 +6,151 @@
     <link rel="stylesheet" href="{% static 'css/calendar.css' %}">
 {% endblock %}
 
-{% block title %}Calendário de Conteúdo{% endblock %}
+{% block title %}Calendário	{% endblock %}
 
 {% block content %}
-<div class="calendar-wrapper">
-    <div class="calendar-container" id="calendar-app">
-
-        <header class="calendar-header">
-            <div> <button id="prev-month" class="nav-button">&lt;</button>
-                <h2 id="month-year-display">Carregando...</h2>
-                <button id="next-month" class="nav-button">&gt;</button>
-                <button id="today-button" class="today-button">HOJE</button>
+<div class="calendar-app-container">
+    
+    <header class="calendar-topbar">
+        <div class="topbar-left">
+            <button id="prev-month" class="nav-arrow"><i class="fa-solid fa-chevron-left"></i></button>
+            <h2 id="month-year-display">Janeiro de 2026</h2>
+            <button id="next-month" class="nav-arrow"><i class="fa-solid fa-chevron-right"></i></button>
+            <button id="today-button" class="btn-today">Hoje</button>
+        </div>
+        
+        <div class="topbar-right">
+            <div class="filters-group">
+                <button class="btn-filter"><i class="fa-solid fa-filter"></i> Todos os Clientes</button>
+                <button class="btn-filter"><i class="fa-solid fa-layer-group"></i> Todos os Status</button>
             </div>
-            <div> <button id="add-event-button" class="add-button">+ ADICIONAR EVENTO</button>
+            <div class="actions-group">
+                <button id="add-task-btn" class="btn-secondary-action"><i class="fa-regular fa-square-check"></i> Adicionar Tarefa</button>
+                <button id="add-post-btn" class="btn-primary-action"><i class="fa-solid fa-plus"></i> Nova Postagem</button>
             </div>
-        </header>
+        </div>
+    </header>
 
-        <div class="calendar-grid">
+    <div class="calendar-main-area" id="main-area">
+        <div class="weekdays-header">
+            <div>DOM</div><div>SEG</div><div>TER</div><div>QUA</div><div>QUI</div><div>SEX</div><div>SÁB</div>
+        </div>
+        <div class="calendar-grid" id="calendar-grid">
             </div>
-
     </div>
+
+    <div class="calendar-footer-legend">
+        <div class="legend-item"><span class="dot dot-scheduled"></span> Agendado</div>
+        <div class="legend-item"><span class="dot dot-pending"></span> Pendente Aprovação</div>
+        <div class="legend-item"><span class="dot dot-draft"></span> Rascunho</div>
+        <div class="legend-divider"></div>
+        <div class="legend-item"><span class="shape shape-feed"></span> Feed</div>
+        <div class="legend-item"><span class="shape shape-story"></span> Story</div>
+        <div class="legend-item"><span class="shape shape-reels"></span> Reels</div>
+        <div class="legend-item"><span class="shape shape-task"></span> Tarefa</div>
+    </div>
+
+    <aside class="details-sidebar" id="calendar-sidebar">
+        <div class="sidebar-header">
+            <div id="sidebar-date-display">
+                </div>
+            <button class="close-sidebar" onclick="closeSidebar()"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+        <div class="sidebar-content" id="sidebar-feed">
+            </div>
+        <div class="sidebar-footer">
+            <small>Resumo: 2 postagens · 0 tarefas</small>
+        </div>
+    </aside>
+
+    <div class="sidebar-backdrop" id="sidebar-backdrop" onclick="closeSidebar()"></div>
+
 </div>
 
 <div id="event-modal-overlay" class="modal-overlay">
-    <div class="modal-content">
-        <form id="event-form">
-            <h3>Adicionar Entrega</h3>
+    <div class="modal-card modal-lg">
+        <div class="modal-header">
+            <h3>Criar Nova Postagem</h3>
+            <button id="modal-close-button" class="icon-close">×</button>
+        </div>
+        
+        <form id="event-form" enctype="multipart/form-data">
+            
+            <div class="form-row">
+                <div class="form-group col-half">
+                    <label>Cliente</label>
+                    <select id="event-client" class="form-control" required>
+                        <option value="">Selecione o cliente</option>
+                        </select>
+                </div>
+                <div class="form-group col-half">
+                    <label>Plataforma</label>
+                    <select id="event-platform" class="form-control">
+                        <option value="instagram" data-icon="fa-instagram">Instagram</option>
+                        <option value="facebook" data-icon="fa-facebook">Facebook</option>
+                        <option value="linkedin" data-icon="fa-linkedin">LinkedIn</option>
+                        <option value="tiktok" data-icon="fa-tiktok">TikTok</option>
+                    </select>
+                </div>
+            </div>
 
-            <div class="form-group">
-                <label for="event-title">Título da Entrega:</label>
-                <input type="text" id="event-title" required>
+            <div class="form-row">
+                <div class="form-group col-third">
+                    <label>Data</label>
+                    <input type="date" id="event-date" class="form-control" required>
+                </div>
+                <div class="form-group col-third">
+                    <label>Hora</label>
+                    <input type="time" id="event-time" class="form-control" value="09:00">
+                </div>
+                <div class="form-group col-third">
+                    <label>Status de Aprovação</label>
+                    <select id="event-status" class="form-control">
+                        <option value="Draft">Rascunho</option>
+                        <option value="Pending">Pendente Aprovação</option>
+                        <option value="Scheduled">Agendado</option>
+                    </select>
+                </div>
             </div>
 
             <div class="form-group">
-                <label for="event-date">Data:</label>
-                <input type="date" id="event-date" required>
+                <label>Mídia</label>
+                <div class="media-upload-area" id="drop-zone">
+                    <input type="file" id="event-media" accept="image/*" hidden>
+                    <div class="upload-placeholder">
+                        <i class="fa-regular fa-image" style="font-size: 24px; color: #9CA3AF;"></i>
+                        <p>Clique para fazer upload ou arraste e solte</p>
+                        <small>PNG, JPG, GIF até 10MB</small>
+                    </div>
+                    <div id="preview-container" style="display:none;">
+                        <img id="image-preview" src="" alt="Preview">
+                        <button type="button" id="remove-image">Remove</button>
+                    </div>
+                </div>
             </div>
 
-            <div class="form-actions">
-                <button type="button" id="modal-cancel-button" class="button-cancel">Cancelar</button>
-                <button type="submit" id="modal-save-button" class="button-save">Salvar</button>
+            <div class="form-group">
+                <label>Caption</label>
+                <textarea id="event-caption" class="form-control" rows="3" placeholder="Write your post caption..."></textarea>
+            </div>
+
+            <div class="modal-actions footer-actions">
+                <button type="button" id="modal-cancel-button" class="btn-ghost">Cancel</button>
+                <button type="submit" class="btn-primary-action">Create Post</button>
             </div>
         </form>
-        <button id="modal-close-button" class="modal-close-button">&times;</button>
     </div>
 </div>
 {% endblock %}
 
 {% block extra_js %}
-    <script id="django-urls" type="application/json">
-        {
-            "getEvents": "{% url 'get_calendar_events' %}",
-            "addEvent": "{% url 'add_calendar_event' %}",
-            "csrfToken": "{{ csrf_token }}"
-        }
-    </script>
-    <script src="{% static 'js/calendar.js' %}"></script>
+<script id="django-urls" type="application/json">
+    {
+        "getEvents": "{% url 'get_calendar_events' %}",
+        "addEvent": "{% url 'add_calendar_event' %}",
+        "getClients": "{% url 'get_clients_for_select' %}",
+        "csrfToken": "{{ csrf_token }}"
+    }
+</script>
+<script src="{% static 'js/calendar.js' %}"></script>
 {% endblock %}

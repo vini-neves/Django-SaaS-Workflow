@@ -76,12 +76,12 @@ def dashboard(request):
     }
 
     # Listas Recentes
-    upcoming_events = CalendarEvent.objects.filter(start_date__gte=today).order_by('start_date')[:5]
+    upcoming_events = CalendarEvent.objects.filter( date__gte=timezone.now().date()).order_by('date')[:5]
     recent_tasks = Task.objects.filter(status__in=['todo', 'in_progress']).order_by('-created_at')[:5]
 
     context = {
-        'project_count': project_count,
-        'pending_tasks_count': pending_tasks_count,
+        'project_count': Project.objects.filter(status='active').count(),
+        'pending_tasks_count': Task.objects.filter(status='pending').count(),
         'completed_tasks_count': completed_tasks_count,
         'total_tasks': total_tasks,
         'completion_percent': completion_percent,
@@ -521,48 +521,75 @@ class DeleteTaskAPI(View):
 
 @login_required
 def calendar_view(request):
+    """Renderiza a página HTML do calendário."""
     return render(request, 'projects/calendar.html')
 
 @login_required
 def get_calendar_events(request):
+    """API para buscar eventos filtrados."""
     year = request.GET.get('year')
     month = request.GET.get('month')
 
-    if not year or not month:
-        return JsonResponse({'error': 'Ano e Mês são obrigatórios'}, status=400)
+    events = CalendarEvent.objects.filter(date__year=year, date__month=month)
+    
+    events_data = []
+    for event in events:
+        events_data.append({
+            'id': event.id,
+            'title': event.title or event.client.name, # Usa nome do cliente se título vazio
+            'date': event.date.strftime('%Y-%m-%d'),
+            'time': event.time.strftime('%H:%M'),
+            'brandName': event.client.name,
+            # Tenta pegar logo ou gera iniciais
+            'brandLogo': event.client.logo.url if event.client.logo else f"https://ui-avatars.com/api/?name={event.client.name}&background=random",
+            'platform': event.platform,
+            'type': event.post_type,
+            'status': event.status,
+            'image': event.media.url if event.media else None, # URL real da imagem
+            'description': event.caption or ''
+        })
 
-    events = CalendarEvent.objects.filter(
-        created_by=request.user,
-        start_date__year=year,
-        start_date__month=month
-    )
-    events_list = [event.to_dict() for event in events]
-    return JsonResponse(events_list, safe=False)
+    return JsonResponse(events_data, safe=False)
 
 @login_required
-@require_POST
+def get_clients_for_select(request):
+    """API simples para preencher o dropdown do modal."""
+    clients = Client.objects.filter(is_active=True).values('id', 'name')
+    return JsonResponse(list(clients), safe=False)
+
+@login_required
+@csrf_exempt
 def add_calendar_event(request):
-    try:
-        data = json.loads(request.body)
-        title = data.get('title')
-        date_str = data.get('date')
-
-        if not title or not date_str:
-            return JsonResponse({'error': 'Dados incompletos'}, status=400)
-
+    """API para criar post com upload de arquivo."""
+    if request.method == 'POST':
         try:
-            event_date = datetime.date.fromisoformat(date_str)
-        except ValueError:
-            return JsonResponse({'error': 'Data inválida (YYYY-MM-DD)'}, status=400)
+            # Quando tem arquivo, os dados vêm em request.POST e request.FILES
+            client_id = request.POST.get('client_id')
+            date = request.POST.get('date')
+            time = request.POST.get('time')
+            platform = request.POST.get('platform')
+            status = request.POST.get('status')
+            caption = request.POST.get('caption')
+            media_file = request.FILES.get('media') # O arquivo vem aqui
 
-        event = CalendarEvent.objects.create(
-            title=title,
-            start_date=event_date,
-            created_by=request.user
-        )
-        return JsonResponse(event.to_dict(), status=201)
-    except Exception as e:
-        return JsonResponse({'error': str(e)}, status=500)
+            client = Client.objects.get(id=client_id)
+
+            new_event = CalendarEvent.objects.create(
+                client=client,
+                title=f"Post {client.name}", # Título automático ou adicione campo
+                date=date,
+                time=time,
+                platform=platform,
+                status=status,
+                caption=caption,
+                media=media_file
+            )
+            
+            return JsonResponse({'message': 'Post criado!', 'id': new_event.id})
+        except Exception as e:
+            return JsonResponse({'error': str(e)}, status=400)
+    
+    return JsonResponse({'error': 'Método inválido'}, status=405)
 
 # ==============================================================================
 # 5. ESTÚDIO DE CRIAÇÃO E POSTS SOCIAIS

@@ -414,3 +414,99 @@ button {
     font-weight: 600;
     background-color: rgba(255, 255, 255, 0.2);
 }
+
+/* ============================================================
+   RESPONSIVIDADE E MENU MOBILE
+   ============================================================ */
+
+/* Elementos Mobile (Escondidos no Desktop) */
+.mobile-menu-btn,
+.close-sidebar-btn,
+.sidebar-overlay {
+    display: none;
+}
+
+/* --- MEDIA QUERY: Celulares e Tablets (até 768px) --- */
+@media (max-width: 768px) {
+
+    /* 1. Ajuste da Sidebar (Off-Canvas) */
+    .sidebar {
+        position: fixed; /* Fixa na tela */
+        top: 0;
+        left: -280px; /* Esconde totalmente à esquerda (largura + sombra) */
+        height: 100vh;
+        z-index: 1050; /* Fica acima de tudo */
+        transition: left 0.3s ease-in-out; /* Animação suave */
+        width: 250px; /* Garante a largura */
+    }
+
+    /* Classe adicionada pelo JS para mostrar o menu */
+    .sidebar.active {
+        left: 0; /* Traz para a tela */
+    }
+
+    /* 2. Botão Hambúrguer Flutuante */
+    .mobile-menu-btn {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        position: fixed;
+        top: 15px;
+        left: 15px;
+        z-index: 1040; /* Logo abaixo da sidebar aberta */
+        background-color: var(--primary-color);
+        color: white;
+        border: none;
+        width: 45px;
+        height: 45px;
+        border-radius: 8px;
+        box-shadow: 0 4px 10px rgba(0,0,0,0.2);
+        cursor: pointer;
+        font-size: 1.2rem;
+    }
+
+    /* 3. Botão Fechar (Dentro da Sidebar) */
+    .close-sidebar-btn {
+        display: block;
+        position: absolute;
+        top: 10px;
+        right: 10px;
+        background: transparent;
+        border: none;
+        color: rgba(255,255,255,0.7);
+        font-size: 1.5rem;
+        cursor: pointer;
+    }
+    .close-sidebar-btn:hover { color: white; }
+
+    /* 4. Overlay (Fundo Escuro) */
+    .sidebar-overlay {
+        display: none; /* Escondido por padrão */
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background-color: rgba(0, 0, 0, 0.5); /* Preto semitransparente */
+        z-index: 1045; /* Entre o conteúdo e a sidebar */
+        backdrop-filter: blur(2px); /* Efeito de desfoque moderno */
+        opacity: 0;
+        transition: opacity 0.3s ease;
+    }
+
+    .sidebar-overlay.active {
+        display: block;
+        opacity: 1;
+    }
+
+    /* 5. Ajuste do Conteúdo Principal */
+    .content {
+        padding-top: 70px; /* Espaço para não ficar atrás do botão hambúrguer */
+        width: 100%;
+    }
+
+    /* Ajuste na Logo para não colar no botão de fechar */
+    .logo-container {
+        margin-top: 20px;
+    }
+}

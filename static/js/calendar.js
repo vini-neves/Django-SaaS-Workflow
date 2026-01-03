@@ -2,202 +2,168 @@
 
 document.addEventListener('DOMContentLoaded', function() {
     
-    // --- Seletores do DOM ---
-    const calendarGrid = document.querySelector('.calendar-grid');
-    const monthYearDisplay = document.getElementById('month-year-display');
-    const prevMonthButton = document.getElementById('prev-month');
-    const nextMonthButton = document.getElementById('next-month');
-    const todayButton = document.getElementById('today-button');
-
-    // --- Seletores do Modal ---
+    // --- ELEMENTOS DOM ---
+    const grid = document.getElementById('calendar-grid');
+    const monthDisplay = document.getElementById('month-year-display');
     const modalOverlay = document.getElementById('event-modal-overlay');
-    const modalForm = document.getElementById('event-form');
-    const modalTitleInput = document.getElementById('event-title');
-    const modalDateInput = document.getElementById('event-date');
-    const openModalButton = document.getElementById('add-event-button');
-    const closeModalButton = document.getElementById('modal-close-button');
-    const cancelModalButton = document.getElementById('modal-cancel-button');
-
-    // --- Pegando URLs do Django ---
+    
+    // Configurações
     const urls = JSON.parse(document.getElementById('django-urls').textContent);
-    const CSRF_TOKEN = urls.csrfToken;
-
-    // --- Estado do Calendário ---
     let currentDate = new Date();
-    let events = []; // Guarda os eventos do mês
 
-    /**
-     * Busca eventos do servidor para o mês e ano
-     */
-    async function fetchEvents(year, month) {
-        // month + 1 porque getMonth() é 0-11 e a API espera 1-12
-        const response = await fetch(`${urls.getEvents}?year=${year}&month=${month + 1}`);
-        if (!response.ok) {
-            console.error("Falha ao buscar eventos");
-            return [];
-        }
-        return await response.json();
-    }
-
-    /**
-     * Renderiza o calendário (dias, eventos, etc.)
-     */
+    // --- 1. RENDERIZAÇÃO DO CALENDÁRIO ---
     async function renderCalendar() {
         const year = currentDate.getFullYear();
         const month = currentDate.getMonth();
-        
-        // 1. Busca os eventos antes de desenhar
-        try {
-            events = await fetchEvents(year, month);
-        } catch (e) {
-            console.error("Erro ao buscar eventos:", e);
-            events = [];
-        }
 
+        // 1. Atualiza Título do Mês
+        monthDisplay.textContent = new Date(year, month).toLocaleString('pt-BR', { month: 'long', year: 'numeric' });
+        monthDisplay.style.textTransform = 'capitalize';
 
-        // 2. LIMPEZA ROBUSTA DO GRID
-        // Remove todas as células de dia (.day-cell) da grade,
-        // mas deixa os cabeçalhos (.day-header) intactos.
-        const cellsToRemove = calendarGrid.querySelectorAll('.day-cell');
-        cellsToRemove.forEach(cell => cell.remove());
+        // 2. Limpa o Grid
+        grid.innerHTML = '';
 
-
-        // 3. Define o texto do cabeçalho
-        const monthName = currentDate.toLocaleString('pt-BR', { month: 'long' });
-        monthYearDisplay.textContent = `${monthName.toUpperCase()} ${year}`;
-
-        // 4. Cálculos dos dias
-        const firstDayOfMonth = new Date(year, month, 1);
+        // 3. Cálculos de Datas
+        const firstDayIndex = new Date(year, month, 1).getDay(); // 0 = Domingo
         const daysInMonth = new Date(year, month + 1, 0).getDate();
-        const firstDayOfWeek = firstDayOfMonth.getDay(); // 0=Dom, 1=Seg, ...
+        const todayStr = new Date().toISOString().split('T')[0];
 
-        // 5. Cria as células de "preenchimento" (dias do mês anterior)
-        for (let i = 0; i < firstDayOfWeek; i++) {
-            calendarGrid.appendChild(createPaddingCell());
+        // 4. Renderiza Células Vazias (Padding)
+        for (let i = 0; i < firstDayIndex; i++) {
+            const pad = document.createElement('div');
+            pad.className = 'day-cell padding-cell';
+            grid.appendChild(pad);
         }
 
-        // 6. Cria as células dos dias do mês
-        const today = new Date();
-        for (let day = 1; day <= daysInMonth; day++) {
-            const date = new Date(year, month, day);
+        // 5. Renderiza os Dias (Estrutura Vazia Primeiro)
+        for (let d = 1; d <= daysInMonth; d++) {
+            const dateStr = `${year}-${String(month+1).padStart(2,'0')}-${String(d).padStart(2,'0')}`;
+            const cell = document.createElement('div');
+            cell.className = `day-cell ${dateStr === todayStr ? 'today' : ''}`;
+            cell.dataset.date = dateStr; // Guarda a data para usar depois
             
-            // Filtra eventos para este dia específico
-            const eventsForDay = events.filter(e => {
-                const eventDate = new Date(e.date + 'T00:00:00'); // Garante data local
-                return eventDate.toDateString() === date.toDateString();
+            // Número do dia
+            cell.innerHTML = `<span class="day-number">${d}</span><div class="events-container"></div>`;
+            
+            grid.appendChild(cell);
+        }
+
+        // 6. Busca e Preenche Eventos (Assíncrono)
+        try {
+            const response = await fetch(`${urls.getEvents}?year=${year}&month=${month + 1}`);
+            if (!response.ok) throw new Error('Erro na API');
+            
+            const events = await response.json();
+            
+            // Distribui os eventos nas células criadas
+            events.forEach(evt => {
+                const cell = grid.querySelector(`.day-cell[data-date="${evt.date}"] .events-container`);
+                if (cell) {
+                    const chip = createEventChip(evt);
+                    cell.appendChild(chip);
+                }
             });
 
-            const isToday = date.toDateString() === today.toDateString();
-            
-            calendarGrid.appendChild(createDayCell(day, isToday, eventsForDay));
+        } catch (error) {
+            console.error("Erro ao carregar eventos:", error);
         }
     }
 
-    function createPaddingCell() {
-        const paddingCell = document.createElement('div');
-        paddingCell.classList.add('day-cell', 'padding');
-        return paddingCell;
-    }
-
-    function createDayCell(day, isToday, eventsForDay) {
-        const dayCell = document.createElement('div');
-        dayCell.classList.add('day-cell');
+    // --- HELPER: CRIA O CHIP VISUAL ---
+    function createEventChip(evt) {
+        const chip = document.createElement('div');
+        chip.className = 'event-chip';
         
-        if (isToday) {
-            dayCell.classList.add('today');
-        }
-        
-        const dayNumber = document.createElement('div');
-        dayNumber.classList.add('day-number');
-        dayNumber.textContent = day;
-        dayCell.appendChild(dayNumber);
+        // Define ícones
+        let iconClass = 'fa-solid fa-share';
+        if (evt.platform === 'instagram') iconClass = 'fa-brands fa-instagram';
+        if (evt.platform === 'facebook') iconClass = 'fa-brands fa-facebook';
+        if (evt.platform === 'linkedin') iconClass = 'fa-brands fa-linkedin';
+        if (evt.platform === 'tiktok') iconClass = 'fa-brands fa-tiktok';
 
-        eventsForDay.forEach(event => {
-            const eventTag = document.createElement('div');
-            eventTag.classList.add('event-tag');
-            eventTag.textContent = event.title;
-            dayCell.appendChild(eventTag);
+        // Define cores de status (bolinha)
+        let statusClass = 'dot-draft';
+        if (evt.status === 'Scheduled') statusClass = 'dot-scheduled';
+        if (evt.status === 'Pending') statusClass = 'dot-pending';
+
+        // Define Logo (Usa placeholder se falhar)
+        const logoUrl = evt.brandLogo || 'https://via.placeholder.com/20';
+
+        chip.innerHTML = `
+            <div class="chip-left">
+                <img src="${logoUrl}" class="chip-logo" onerror="this.src='https://via.placeholder.com/20'">
+                <span class="chip-title">${evt.title}</span>
+            </div>
+            <div class="chip-right">
+                <span class="dot ${statusClass}" style="margin-right:5px;"></span>
+                <i class="${iconClass} chip-icon"></i>
+            </div>
+        `;
+        
+        // Adiciona clique para abrir sidebar (se necessário)
+        chip.addEventListener('click', (e) => {
+            e.stopPropagation();
+            if(window.openSidebar) window.openSidebar(evt); // Chama função global se existir
         });
 
-        return dayCell;
+        return chip;
     }
 
-    // --- Funções do Modal ---
-    function showModal() {
-        modalOverlay.style.display = 'flex';
-        // Define a data do input para a data atual (hoje)
-        const today = new Date();
-        const year = today.getFullYear();
-        const month = String(today.getMonth() + 1).padStart(2, '0');
-        const day = String(today.getDate()).padStart(2, '0');
-        modalDateInput.value = `${year}-${month}-${day}`;
+    // --- CONTROLE DA MODAL ---
+    const btnNewPost = document.getElementById('add-post-btn');
+    const btnClose = document.getElementById('modal-close-button');
+    const btnCancel = document.getElementById('modal-cancel-button');
+
+    function openModal() {
+        // Usa flex para centralizar graças ao CSS corrigido
+        modalOverlay.style.display = 'flex'; 
+        loadClients(); // Carrega clientes no select
     }
 
-    function hideModal() {
+    function closeModal() {
         modalOverlay.style.display = 'none';
-        modalForm.reset(); // Limpa o formulário
     }
 
-    async function handleFormSubmit(e) {
-        e.preventDefault(); 
-        
-        const title = modalTitleInput.value;
-        const date = modalDateInput.value;
+    if(btnNewPost) btnNewPost.addEventListener('click', openModal);
+    if(btnClose) btnClose.addEventListener('click', closeModal);
+    if(btnCancel) btnCancel.addEventListener('click', closeModal);
+    
+    // Fechar ao clicar fora
+    modalOverlay.addEventListener('click', (e) => {
+        if(e.target === modalOverlay) closeModal();
+    });
 
-        if (!title || !date) {
-            alert('Por favor, preencha o título e a data.');
-            return;
-        }
-
-        try {
-            const response = await fetch(urls.addEvent, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
-                body: JSON.stringify({
-                    title: title,
-                    date: date
-                })
-            });
-
-            if (!response.ok) {
-                const errorData = await response.json();
-                throw new Error(errorData.error || 'Falha ao salvar o evento.');
-            }
-
-            hideModal();
-            renderCalendar(); // Recarrega o calendário para mostrar o novo evento
-            
-        } catch (error) {
-            console.error('Erro ao salvar evento:', error);
-            alert('Não foi possível salvar o evento: ' + error.message);
-        }
-    }
-
-    // --- Event Listeners (Controles) ---
-    prevMonthButton.addEventListener('click', () => {
+    // --- NAVEGAÇÃO ---
+    document.getElementById('prev-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() - 1);
         renderCalendar();
     });
-
-    nextMonthButton.addEventListener('click', () => {
+    document.getElementById('next-month').addEventListener('click', () => {
         currentDate.setMonth(currentDate.getMonth() + 1);
         renderCalendar();
     });
-
-    todayButton.addEventListener('click', () => {
+    document.getElementById('today-button').addEventListener('click', () => {
         currentDate = new Date();
         renderCalendar();
     });
 
-    // --- Listeners do Modal ---
-    openModalButton.addEventListener('click', showModal);
-    closeModalButton.addEventListener('click', hideModal);
-    cancelModalButton.addEventListener('click', hideModal);
-    modalForm.addEventListener('submit', handleFormSubmit);
-
-    // --- Inicialização ---
+    // --- INICIALIZAÇÃO ---
     renderCalendar();
+
+    // --- CARREGAR CLIENTES (Select) ---
+    async function loadClients() {
+        const select = document.getElementById('event-client');
+        if(select.options.length > 1) return; // Evita recarregar se já tem dados
+        
+        try {
+            const res = await fetch(urls.getClients);
+            const data = await res.json();
+            data.forEach(c => {
+                const opt = document.createElement('option');
+                opt.value = c.id;
+                opt.textContent = c.name;
+                select.appendChild(opt);
+            });
+        } catch(e) { console.error(e); }
+    }
 });

@@ -36,7 +36,7 @@
         <tbody>
             {% for client in clients %}
             <tr>
-                <td>
+                <td data-label="Cliente">
                     <div class="client-info">
                         <div class="client-avatar">
                             {% with client.name|slice:":2" as initials %}{{ initials|upper }}{% endwith %}
@@ -44,8 +44,8 @@
                         <span class="client-name">{{ client.name }}</span>
                     </div>
                 </td>
-                <td>{{ client.nome_representante|default:"-" }}</td>
-                <td>
+                <td data-label="Representante">{{ client.nome_representante|default:"-" }}</td>
+                <td data-label="Contrato">
                     <div class="progress-bar-bg">
                         <div class="progress-bar-fill" style="width: 60%;"></div>
                     </div>
@@ -57,7 +57,7 @@
                         {% endif %}
                     </span>
                 </td>
-                <td>
+                <td data-label="Canais">
                     <div class="social-list">
                         {% for acc in client.social_accounts.all %}
                             {% if acc.platform == 'instagram' %}<div class="social-icon bg-insta"><i class="fa-brands fa-instagram"></i></div>{% endif %}
@@ -67,20 +67,26 @@
                         {% endfor %}
                     </div>
                 </td>
-                <td>
+                <td data-label="Status">
                     {% if client.is_active %}
                         <span class="badge badge-active">Ativo</span>
                     {% else %}
                         <span class="badge badge-inactive">Inativo</span>
                     {% endif %}
                 </td>
-                <td>
-                    <button class="action-btn" onclick="editClient({{ client.id }})"><i class="fa-solid fa-pen"></i></button>
-                    <button class="action-btn delete" onclick="deleteClient({{ client.id }})"><i class="fa-regular fa-trash-can"></i></button>
+                <td data-label="Ações">
+                    <div class="actions-wrapper">
+                        <button class="action-btn" type="button" data-url="{% url 'get_client_data_api' client.id %}" onclick="editClient(this)">
+                            <i class="fa-solid fa-pen"></i>
+                        </button>
+                        <button class="action-btn delete" onclick="deleteClient({{ client.id }})">
+                            <i class="fa-regular fa-trash-can"></i>
+                        </button>
+                    </div>
                 </td>
             </tr>
             {% empty %}
-            <tr><td colspan="6" style="text-align:center; padding: 40px; color:#999;">Nenhum cliente encontrado.</td></tr>
+            <tr><td colspan="6" class="empty-msg">Nenhum cliente encontrado.</td></tr>
             {% endfor %}
         </tbody>
     </table>

@@ -1,137 +1,266 @@
-/* static/css/login.css */
 
-body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+body, html {
+    height: 100%;
     margin: 0;
-    padding: 0;
-    background-color: #f4f7f6;
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: var(--bg-gray);
 }
 
-.auth-container {
+.login-wrapper {
     display: flex;
     width: 100%;
     min-height: 100vh;
+    background: #fff;
 }
 
-/* --- Lado Esquerdo (Branding) --- */
-.auth-brand-side {
-    flex-basis: 50%;
-    background-color: var(--primary-color); /* Cor da agência! */
-    color: var(--text-on-primary);
+/* --- LADO ESQUERDO (BRANDING) --- */
+.login-brand-side {
+    flex: 1; /* Ocupa metade da tela */
+    position: relative;
+    background: linear-gradient(135deg, var(--primary-color) 0%, #1a1a3a 100%);
     display: flex;
-    flex-direction: column;
-    justify-content: center;
     align-items: center;
-    padding: 40px;
+    justify-content: center;
+    color: white;
+    overflow: hidden;
+}
+
+/* Padrão de fundo opcional (bolinhas) */
+.brand-overlay {
+    position: absolute;
+    top: 0; left: 0; width: 100%; height: 100%;
+    background-image: radial-gradient(rgba(255,255,255,0.1) 1px, transparent 1px);
+    background-size: 20px 20px;
+    opacity: 0.5;
+}
+
+.brand-content {
+    position: relative;
+    z-index: 2;
     text-align: center;
-}
-
-.auth-logo {
-    max-width: 150px;
-    margin-bottom: 20px;
-    border-radius: 8px;
-}
-
-.auth-brand-side h1 {
-    font-size: 2.5rem;
-    font-weight: 600;
-}
-
-/* --- Lado Direito (Formulário) --- */
-.auth-form-side {
-    flex-basis: 50%;
-    display: grid;
-    place-items: center;
     padding: 40px;
+    max-width: 500px;
 }
 
-.auth-form-side > * {
+.brand-logo h1 {
+    font-size: 3.5rem;
+    font-weight: 700;
+    margin: 0;
+    letter-spacing: -1px;
+}
+
+.brand-tagline {
+    font-size: 1.2rem;
+    margin-top: 20px;
+    opacity: 0.8;
+    line-height: 1.6;
+}
+
+/* --- LADO DIREITO (FORMULÁRIO) --- */
+.login-form-side {
+    flex: 1; /* Ocupa a outra metade */
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    padding: 40px;
+    background-color: #ffffff;
+}
+
+.form-container {
     width: 100%;
-    max-width: 400px;
+    max-width: 400px; /* Largura ideal para leitura */
 }
 
-.auth-form-side h2 {
+/* Header apenas para mobile */
+.mobile-logo-header {
+    display: none;
+    font-size: 1.8rem;
+    font-weight: bold;
+    color: var(--primary-color);
+    text-align: center;
+    margin-bottom: 30px;
+}
+
+.login-header {
+    margin-bottom: 30px;
+}
+
+.login-header h2 {
     font-size: 2rem;
+    font-weight: 700;
     color: #333;
-    margin-bottom: 20px;
-}
-
-/* --- Formulário e Links --- */
-.auth-form {
-    display: flex;
-    flex-direction: column;
-    gap: 15px;
-}
-
-.form-group {
-    display: flex;
-    flex-direction: column;
-}
-
-.form-group label {
-    font-size: 0.9rem;
-    font-weight: 500;
-    color: #555;
     margin-bottom: 5px;
 }
 
-.form-group input {
-    padding: 12px;
-    border: 1px solid #ccc;
-    border-radius: 6px;
-    font-size: 1rem;
+/* Estilo dos Inputs */
+.input-group-custom {
+    margin-bottom: 20px;
 }
 
-.password-wrapper {
+.input-group-custom label {
+    display: block;
+    margin-bottom: 8px;
+    font-weight: 600;
+    color: #555;
+    font-size: 0.9rem;
+}
+
+.input-wrapper {
     position: relative;
-    display: flex;
 }
 
-.password-wrapper input {
-    width: 100%;
-}
-
-.toggle-password {
+.input-icon {
     position: absolute;
-    right: 12px;
+    left: 15px;
     top: 50%;
     transform: translateY(-50%);
-    cursor: pointer;
-    color: #888;
+    color: #aaa;
 }
 
-.auth-button {
+.form-control {
+    width: 100%;
+    padding: 12px 15px 12px 45px; /* Espaço para o ícone */
+    border: 1px solid #ddd;
+    border-radius: 8px;
+    font-size: 1rem;
+    transition: all 0.3s ease;
+    background-color: #f9f9f9;
+}
+
+.form-control:focus {
+    border-color: var(--primary-color);
+    box-shadow: 0 0 0 3px rgba(51, 51, 102, 0.1); /* Cor primária com transparência */
+    background-color: #fff;
+    outline: none;
+}
+
+/* Botão de Login */
+.btn-login {
+    width: 100%;
     padding: 14px;
-    background: var(--primary-color);
-    color: var(--text-on-primary);
+    background-color: var(--primary-color);
+    color: white;
     border: none;
-    border-radius: 6px;
-    font-size: 1.1rem;
-    font-weight: bold;
+    border-radius: 8px;
+    font-size: 1rem;
+    font-weight: 600;
     cursor: pointer;
-    margin-top: 10px;
-    transition: filter 0.2s;
-}
-
-.auth-button:hover {
-    filter: brightness(110%);
-}
-
-.auth-links {
+    transition: background-color 0.3s;
     margin-top: 20px;
-    text-align: center;
 }
 
-.auth-links a {
-    color: var(--secondary-color);
+.btn-login:hover {
+    background-color: var(--primary-hover);
+    transform: translateY(-1px);
+}
+
+/* Links e Ações */
+.actions-row {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    font-size: 0.9rem;
+    margin-top: 10px;
+}
+
+.forgot-password {
+    color: var(--accent-color);
     text-decoration: none;
     font-weight: 500;
 }
 
-.form-error {
-    color: #d93025;
-    background-color: #fdd;
-    padding: 10px;
-    border-radius: 5px;
+.divider {
     text-align: center;
+    margin: 30px 0;
+    position: relative;
+}
+
+.divider span {
+    background: #fff;
+    padding: 0 10px;
+    color: #999;
+    font-size: 0.9rem;
+    position: relative;
+    z-index: 1;
+}
+
+.divider::before {
+    content: '';
+    position: absolute;
+    top: 50%;
+    left: 0;
+    width: 100%;
+    height: 1px;
+    background: #eee;
+    z-index: 0;
+}
+
+/* Botões Sociais */
+.social-login-buttons {
+    display: flex;
+    gap: 15px;
+    justify-content: center;
+    margin-bottom: 30px;
+}
+
+.btn-social {
+    width: 50px;
+    height: 50px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: 50%;
+    border: 1px solid #eee;
+    color: #555;
+    font-size: 1.2rem;
+    transition: all 0.3s;
+    text-decoration: none;
+}
+
+.btn-social:hover {
+    background-color: #f0f0f0;
+    color: var(--primary-color);
+    border-color: #ccc;
+}
+
+.footer-text {
+    text-align: center;
+    font-size: 0.9rem;
+    color: #777;
+}
+
+.footer-text a {
+    color: var(--primary-color);
+    font-weight: 600;
+    text-decoration: none;
+}
+
+/* =========================================
+   RESPONSIVIDADE MOBILE
+   ========================================= */
+
+@media (max-width: 900px) {
+    .login-brand-side {
+        display: none; /* Esconde o lado colorido no tablet/mobile */
+    }
+
+    .login-form-side {
+        background-color: #f4f6f9; /* Fundo cinza suave no mobile */
+        padding: 20px;
+    }
+
+    .form-container {
+        background: #fff;
+        padding: 30px;
+        border-radius: 15px;
+        box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    }
+
+    .mobile-logo-header {
+        display: block; /* Mostra o logo no topo do form */
+    }
+    
+    .login-header {
+        text-align: center;
+    }
 }

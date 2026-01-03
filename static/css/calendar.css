@@ -1,253 +1,686 @@
 /* static/css/calendar.css */
 
-.calendar-wrapper {
-    background-color: #ffffff; /* Fundo branco principal */
+:root {
+    --bg-body: #F9FAFB;
+    /* Fundo levemente cinza do app */
+    --bg-card: #FFFFFF;
+    --border-color: #E5E7EB;
+    --text-primary: #111827;
+    --text-secondary: #6B7280;
+    --primary-blue: #3B82F6;
+    /* Azul do botão New Post */
+    --primary-blue-hover: #2563EB;
+
+    /* Cores das Tags (Pastel) */
+    --tag-feed-bg: #E0F2FE;
+    --tag-feed-text: #0284C7;
+    --tag-story-bg: #FEF3C7;
+    --tag-story-text: #D97706;
+    --tag-reels-bg: #FCE7F3;
+    --tag-reels-text: #DB2777;
+    --tag-task-bg: #F3F4F6;
+    --tag-task-text: #4B5563;
+}
+
+/* Container Geral */
+.calendar-app-container {
+    display: flex;
+    flex-direction: column;
+    height: calc(100vh - 80px);
+    /* Ajuste conforme seu header */
+    background-color: var(--bg-card);
     border-radius: 8px;
-    padding: 20px;
-    box-shadow: 0 4px 12px rgba(0, 0, 0, 0.05);
-    min-height: calc(100vh - 100px); /* Ajuste para preencher a altura */
-    display: flex; /* Para o header e grid funcionarem bem */
-    flex-direction: column;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
+    position: relative;
+    overflow: hidden;
+    /* Importante para o blur não vazar */
 }
 
-.calendar-container {
-    width: 100%;
-    color: #333; /* Texto escuro padrão */
-    flex-grow: 1; /* Faz o container crescer para preencher o espaço */
+/* --- HEADER --- */
+.calendar-topbar {
     display: flex;
-    flex-direction: column;
-}
-
-.calendar-header {
-    display: flex;
-    align-items: center;
     justify-content: space-between;
-    margin-bottom: 25px;
-    flex-wrap: wrap; /* Garante que os elementos quebrem a linha se não houver espaço */
-    gap: 15px; /* Espaço entre os blocos de navegação e botões */
+    align-items: center;
+    padding: 20px 30px;
+    border-bottom: 1px solid var(--border-color);
+    background: #fff;
 }
 
-.calendar-nav-left {
+.topbar-left {
     display: flex;
     align-items: center;
+    gap: 15px;
+}
+
+#month-year-display {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0;
+    min-width: 180px;
+}
+
+.nav-arrow {
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    cursor: pointer;
+    font-size: 1rem;
+    padding: 5px;
+}
+
+.nav-arrow:hover {
+    color: var(--text-primary);
+}
+
+.btn-today {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    padding: 6px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--text-primary);
+    cursor: pointer;
+    font-size: 0.9rem;
+    transition: all 0.2s;
+}
+
+.btn-today:hover {
+    background: #F3F4F6;
+}
+
+.topbar-right {
+    display: flex;
+    gap: 20px;
+}
+
+.filters-group,
+.actions-group {
+    display: flex;
     gap: 10px;
 }
 
-.calendar-nav-right {
+.btn-filter,
+.btn-secondary-action {
+    background: #fff;
+    border: 1px solid var(--border-color);
+    padding: 8px 16px;
+    border-radius: 6px;
+    font-weight: 600;
+    color: var(--text-secondary);
+    cursor: pointer;
     display: flex;
     align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
 }
 
-.calendar-header h2 {
-    color: var(--primary-color); /* Usa a cor primária da agência */
-    font-weight: 600;
-    text-transform: uppercase;
-    letter-spacing: 1px;
-    margin: 0;
-    font-size: 1.5em;
-    min-width: 150px; /* Garante que o mês/ano não fique muito apertado */
-    text-align: center;
+.btn-filter:hover,
+.btn-secondary-action:hover {
+    background: #F9FAFB;
+    color: var(--text-primary);
 }
 
-.nav-button, .today-button {
-    background-color: #f0f0f0; /* Fundo cinza claro */
-    border: 1px solid #ddd;
-    color: #555;
-    font-size: 1em;
-    font-weight: bold;
-    cursor: pointer;
-    padding: 8px 12px;
-    border-radius: 6px;
-    transition: background-color 0.3s ease;
-}
-
-.nav-button:hover {
-    background-color: #e0e0e0;
-}
-
-.today-button {
-    background-color: var(--secondary-color); /* Usa a cor secundária */
-    color: var(--text-on-secondary);
-    border: none;
-    font-size: 0.9em;
-    padding: 9px 15px;
-    margin-left: 10px; /* Espaço entre o botão de navegação e o HOJE */
-}
-
-.today-button:hover {
-    filter: brightness(110%);
-}
-
-/* --- Estilos do Botão "Adicionar Evento" --- */
-.add-button {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
-    border: none;
-    padding: 10px 16px;
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    /* Estilo do botão da sua imagem */
-    background-color: var(--primary-color); /* Vermelho/Laranja como na imagem */
+.btn-primary-action {
+    background-color: var(--primary-blue);
     color: white;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 0.9em;
+    border: none;
+    padding: 8px 20px;
+    border-radius: 6px;
+    font-weight: 600;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    font-size: 0.9rem;
+    transition: background 0.2s;
 }
-.add-button:hover {
-    filter: brightness(110%);
+
+.btn-primary-action:hover {
+    background-color: var(--primary-blue-hover);
+}
+
+.modal-header {
+    padding: 20px 25px;
+    border-bottom: 1px solid #E5E7EB;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+.modal-header h3 { margin: 0; font-size: 1.25rem; font-weight: 700; color: #111827; }
+
+/* Ajuste no Corpo do Modal */
+#event-form { padding: 25px; }
+
+
+/* --- GRID --- */
+.calendar-main-area {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    transition: filter 0.3s ease;
+    /* Para o efeito de blur */
+}
+
+/* Quando a sidebar está ativa, desfoca o fundo */
+.calendar-main-area.blurred {
+    filter: blur(4px);
+    pointer-events: none;
+    /* Impede cliques no fundo */
+}
+
+.weekdays-header {
+    display: grid;
+    grid-template-columns: repeat(7, 1fr);
+    padding: 10px 0;
+    border-bottom: 1px solid var(--border-color);
+    background: #fff;
+}
+
+.weekdays-header div {
+    text-align: left;
+    padding-left: 15px;
+    color: #9CA3AF;
+    font-size: 0.75rem;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
 }
 
 .calendar-grid {
     display: grid;
     grid-template-columns: repeat(7, 1fr);
-    gap: 10px; /* Espaço entre os dias */
-    flex-grow: 1; /* Faz o grid crescer para preencher o espaço */
-}
-
-.day-header {
-    text-align: center;
-    font-weight: 600;
-    color: var(--secondary-color); /* Dias (DOM, SEG) na cor secundária */
-    padding-bottom: 10px;
-    font-size: 0.9em;
+    grid-auto-rows: 1fr;
+    /* Faz todas as linhas terem altura igual */
+    flex: 1;
+    overflow-y: auto;
 }
 
 .day-cell {
-    background-color: #f9f9f9; /* Fundo de cada célula */
-    border-radius: 6px;
-    border: 1px solid #eee;
-    font-weight: 500;
-    cursor: pointer;
-    transition: background-color 0.3s ease, border 0.3s ease;
-
-    /* Estilos para o conteúdo interno do dia */
-    display: flex;
-    flex-direction: column;
-    align-items: flex-start; /* Alinha o conteúdo à esquerda */
-    min-height: 100px; /* Altura mínima para as células */
-    padding: 8px; /* Espaçamento interno */
-    box-sizing: border-box; /* Garante que o padding não aumente o tamanho total */
+    border-right: 1px solid var(--border-color);
+    border-bottom: 1px solid var(--border-color);
+    padding: 10px;
+    min-height: 120px;
+    background: #fff;
+    position: relative;
+    transition: background 0.2s;
 }
 
-/* Dias de preenchimento (mês anterior/próximo) */
-.day-cell.padding {
-    background-color: transparent;
-    border: 1px solid transparent;
-    cursor: default;
-    color: #ccc;
+.day-cell:nth-child(7n) {
+    border-right: none;
 }
 
-.day-cell:not(.padding):hover {
-    background-color: #f0f0f0;
-    border-color: #ddd;
+.day-cell:hover {
+    background-color: #FAFAFA;
 }
 
-/* Marcação do dia de HOJE */
-.day-cell.today {
-    background-color: var(--primary-color); /* Cor laranja/vermelha como na sua imagem */
-    color: white;
-    font-weight: bold;
-    border-color: var(--primary-color);
+.day-number {
+    font-size: 0.9rem;
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: 8px;
+    display: block;
 }
 
 .day-cell.today .day-number {
-    background-color: transparent; /* O número já está dentro da célula colorida */
-    color: white;
+    color: var(--primary-blue);
 }
 
-/* Estilo do número do dia */
-.day-number {
-    font-size: 1.2em; /* Tamanho maior para o número do dia */
-    font-weight: bold;
-    margin-bottom: 5px; /* Espaço entre o número e os eventos */
-    /* Remove o estilo de círculo do dia-number, o background é da célula */
-    width: auto;
-    height: auto;
-    padding: 0;
-    border-radius: 0;
+.padding-cell {
+    background-color: #FCFCFD;
 }
 
-.event-tag {
-    font-size: 0.7em; /* Tamanho menor para a tag do evento */
-    padding: 2px 5px;
-    background-color: rgba(255, 255, 255, 0.8); /* Fundo claro para o evento */
-    color: #333; /* Texto escuro */
-    border-radius: 3px;
-    margin-top: 3px;
-    max-width: 100%; /* Garante que não exceda a largura da célula */
+/* --- CHIPS (Os eventos no calendário) --- */
+.event-chip {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 6px;
+    padding: 4px 8px;
+    margin-bottom: 6px;
+    cursor: pointer;
+    box-shadow: 0 1px 2px rgba(0, 0, 0, 0.03);
+    transition: all 0.2s;
+    height: 32px;
+}
+
+.event-chip:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 6px rgba(0, 0, 0, 0.05);
+    border-color: #D1D5DB;
+    z-index: 10;
+    /* Fica por cima */
+}
+
+/* Estilo para TAREFAS (Visual Checkbox) */
+.event-chip.type-task {
+    background-color: #F9FAFB;
+    border-left: 3px solid #9CA3AF;
+}
+
+/* Conteúdo Esquerdo do Chip */
+.chip-left {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    overflow: hidden;
+}
+
+.chip-logo {
+    width: 20px;
+    height: 20px;
+    border-radius: 50%;
+    object-fit: cover;
+}
+
+.chip-title {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--text-primary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
-    box-shadow: 0 1px 2px rgba(0,0,0,0.1);
+    max-width: 80px;
 }
 
-/* --- Estilos do Modal (Pop-up) --- */
+/* Conteúdo Direito do Chip */
+.chip-right {
+    display: flex;
+    align-items: center;
+}
+
+.chip-icon {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+/* Ícones coloridos */
+.chip-icon.fa-instagram {
+    color: #E1306C;
+}
+
+.chip-icon.fa-linkedin {
+    color: #0077B5;
+}
+
+.chip-icon.fa-tiktok {
+    color: #000000;
+}
+
+/* --- SIDEBAR (Direita) --- */
+.details-sidebar {
+    position: absolute;
+    top: 0;
+    right: -400px;
+    /* Escondida */
+    width: 380px;
+    height: 100%;
+    background: #fff;
+    box-shadow: -5px 0 25px rgba(0, 0, 0, 0.1);
+    z-index: 50;
+    transition: right 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+    display: flex;
+    flex-direction: column;
+    padding: 25px;
+    border-left: 1px solid var(--border-color);
+}
+
+.details-sidebar.active {
+    right: 0;
+}
+
+.sidebar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 30px;
+}
+
+#sidebar-date-display h3 {
+    margin: 0;
+    font-size: 1.5rem;
+    color: var(--text-primary);
+}
+
+#sidebar-date-display span {
+    color: var(--text-secondary);
+    font-size: 0.95rem;
+}
+
+.close-sidebar {
+    background: none;
+    border: none;
+    font-size: 1.2rem;
+    cursor: pointer;
+    color: var(--text-secondary);
+}
+
+.sidebar-content {
+    flex: 1;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    gap: 20px;
+}
+
+/* Feed Card (Na Sidebar) */
+.feed-card {
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 16px;
+    background: #fff;
+}
+
+.feed-header {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 12px;
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+}
+
+.feed-user {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+    margin-bottom: 12px;
+}
+
+.feed-user img {
+    width: 32px;
+    height: 32px;
+    border-radius: 50%;
+}
+
+.feed-user div strong {
+    display: block;
+    font-size: 0.95rem;
+    color: var(--text-primary);
+}
+
+.feed-content {
+    font-size: 0.9rem;
+    line-height: 1.5;
+    color: #374151;
+    margin-bottom: 12px;
+}
+
+.feed-image {
+    width: 100%;
+    border-radius: 8px;
+    object-fit: cover;
+}
+
+/* --- HOVER TOOLTIP (Para o calendário) --- */
+.hover-card {
+    position: absolute;
+    bottom: 100%;
+    /* Aparece acima */
+    left: 50%;
+    transform: translateX(-50%);
+    width: 240px;
+    background: #fff;
+    border: 1px solid var(--border-color);
+    border-radius: 12px;
+    padding: 12px;
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    z-index: 100;
+    pointer-events: none;
+    /* Não atrapalha o mouse */
+    opacity: 0;
+    transition: opacity 0.2s;
+    margin-bottom: 10px;
+}
+
+.event-chip:hover .hover-card {
+    opacity: 1;
+}
+
+.hover-img {
+    width: 100%;
+    height: 100px;
+    object-fit: cover;
+    border-radius: 6px;
+    margin-bottom: 8px;
+}
+
+.hover-title {
+    font-weight: 700;
+    font-size: 0.9rem;
+    display: block;
+    margin-bottom: 4px;
+}
+
+.hover-status {
+    background: #FEF3C7;
+    color: #D97706;
+    font-size: 0.7rem;
+    padding: 2px 6px;
+    border-radius: 4px;
+    font-weight: 600;
+}
+
+/* --- MODAL --- */
 .modal-overlay {
-    display: none; /* Começa escondido */
+    display: none;
     position: fixed;
     top: 0;
     left: 0;
     width: 100%;
     height: 100%;
-    background: rgba(0, 0, 0, 0.5);
+    background-color: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(5px);
+    z-index: 2000;
     justify-content: center;
     align-items: center;
-    z-index: 1000;
 }
-.modal-content {
-    background: white;
-    padding: 25px;
-    border-radius: 8px;
-    box-shadow: 0 5px 15px rgba(0,0,0,0.3);
-    width: 90%;
-    max-width: 450px;
+
+.modal-overlay.active {
+    display: flex !important;
+}
+
+.modal-card {
+    background: #fff;
+    width: 600px;
+    max-width: 90%;
+    border-radius: 12px;
+    box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.25);
+    display: flex;
+    flex-direction: column;
+    max-height: 90vh;
+    overflow-y: auto;
     position: relative;
+    animation: modalFadeIn 0.3s ease-out;
 }
-.modal-close-button {
-    position: absolute;
-    top: 10px;
-    right: 15px;
-    background: none;
-    border: none;
-    font-size: 1.8em;
-    color: #aaa;
-    cursor: pointer;
+
+@keyframes modalFadeIn {
+    from { opacity: 0; transform: translateY(20px); }
+    to { opacity: 1; transform: translateY(0); }
 }
-.form-group {
+
+/* --- RODAPÉ COM LEGENDA --- */
+.calendar-footer-legend {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    gap: 20px;
+    padding: 15px;
+    background: #fff;
+    border-top: 1px solid var(--border-color);
+    font-size: 0.8rem;
+    color: var(--text-secondary);
+}
+
+.legend-item {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+}
+
+.legend-divider {
+    width: 1px;
+    height: 16px;
+    background: var(--border-color);
+    margin: 0 10px;
+}
+
+/* Bolinhas de Status */
+.dot {
+    width: 8px;
+    height: 8px;
+    border-radius: 50%;
+    display: inline-block;
+}
+
+.dot-scheduled {
+    background-color: #10B981;
+}
+
+/* Verde */
+.dot-pending {
+    background-color: #F59E0B;
+}
+
+/* Amarelo */
+.dot-draft {
+    background-color: #6B7280;
+}
+
+/* Cinza */
+
+/* Formas de Tipo */
+.shape {
+    display: inline-block;
+}
+
+.shape-feed {
+    width: 10px;
+    height: 10px;
+    background: #6B7280;
+    border-radius: 2px;
+}
+
+.shape-story {
+    width: 10px;
+    height: 10px;
+    border: 2px solid #EC4899;
+    border-radius: 50%;
+}
+
+.shape-task {
+    width: 12px;
+    height: 8px;
+    border: 1px solid #F59E0B;
+    border-radius: 2px;
+}
+
+/* --- MODAL ESTILO NOTION/SAAS --- */
+.modal-lg {
+    width: 600px;
+    max-width: 95vw;
+}
+
+.form-row {
+    display: flex;
+    gap: 15px;
     margin-bottom: 15px;
 }
+
+.col-half {
+    flex: 1;
+}
+
+.col-third {
+    flex: 1;
+}
+
 .form-group label {
     display: block;
-    margin-bottom: 5px;
-    font-weight: 500;
+    margin-bottom: 6px;
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: #374151;
 }
-.form-group input {
-    width: calc(100% - 20px);
-    padding: 10px;
-    border: 1px solid #ccc;
-    border-radius: 5px;
+
+.form-control {
+    width: 100%;
+    padding: 10px 12px;
+    border: 1px solid #D1D5DB;
+    border-radius: 6px;
+    font-size: 0.9rem;
+    transition: border 0.2s;
+    background: #fff;
 }
-.form-actions {
-    display: flex;
-    justify-content: flex-end;
-    gap: 10px;
-    margin-top: 20px;
+
+.form-control:focus {
+    outline: none;
+    border-color: var(--primary-blue);
+    ring: 2px solid rgba(59, 130, 246, 0.1);
 }
-.button-cancel, .button-save {
-    padding: 10px 15px;
-    border: none;
-    border-radius: 5px;
+
+/* Área de Upload */
+.media-upload-area {
+    border: 2px dashed #E5E7EB;
+    border-radius: 8px;
+    padding: 30px;
+    text-align: center;
     cursor: pointer;
-    font-weight: bold;
+    transition: background 0.2s;
+    position: relative;
+    background: #F9FAFB;
 }
-.button-cancel {
-    background-color: #f0f0f0;
-    color: #555;
+
+.media-upload-area:hover {
+    background: #F3F4F6;
+    border-color: #D1D5DB;
 }
-.button-save {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
+
+.upload-placeholder p {
+    margin: 10px 0 5px;
+    font-weight: 500;
+    color: #4B5563;
+}
+
+.upload-placeholder small {
+    color: #9CA3AF;
+    font-size: 0.75rem;
+}
+
+#preview-container {
+    margin-top: 10px;
+    text-align: center;
+}
+
+#image-preview {
+    max-height: 150px;
+    border-radius: 6px;
+    display: block;
+    margin: 0 auto;
+}
+
+#remove-image {
+    margin-top: 8px;
+    background: none;
+    border: none;
+    color: #EF4444;
+    font-size: 0.8rem;
+    cursor: pointer;
+    text-decoration: underline;
+}
+
+.footer-actions {
+    margin-top: 25px;
+    padding-top: 20px;
+    border-top: 1px solid #F3F4F6;
+}
+
+.events-container {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    width: 100%;
+    margin-top: 5px;
 }

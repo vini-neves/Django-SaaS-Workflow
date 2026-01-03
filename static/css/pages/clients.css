@@ -306,3 +306,86 @@ input:checked + .slider:before { transform: translateX(20px); }
 .modal-backdrop {
     z-index: 1050;
 }
+
+/* =========================================
+   RESPONSIVIDADE MOBILE (TABLE TO CARD)
+   ========================================= */
+
+   @media (max-width: 768px) {
+    /* 1. Ajuste do Cabeçalho da Página */
+    .page-header {
+        flex-direction: column;
+        align-items: flex-start;
+        gap: 15px;
+    }
+
+    .btn-add-client {
+        width: 100%; /* Botão largura total no mobile */
+        justify-content: center;
+    }
+
+    /* 2. Transformar Tabela em Cards */
+    .modern-table thead {
+        display: none; /* Esconde o cabeçalho da tabela */
+    }
+
+    .modern-table, .modern-table tbody, .modern-table tr, .modern-table td {
+        display: block;
+        width: 100%;
+    }
+
+    .modern-table tr {
+        margin-bottom: 20px;
+        background: #fff;
+        border-radius: 12px;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.05); /* Sombra suave */
+        padding: 15px;
+        border: 1px solid #eee;
+    }
+
+    .modern-table td {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        text-align: right;
+        padding: 10px 0;
+        border-bottom: 1px solid #f0f0f0;
+    }
+
+    .modern-table td:last-child {
+        border-bottom: none;
+        justify-content: flex-end; /* Botões alinhados à direita */
+        padding-top: 15px;
+    }
+
+    /* 3. Inserir Rótulos via CSS (usando o data-label) */
+    .modern-table td::before {
+        content: attr(data-label);
+        font-weight: 600;
+        color: #666;
+        text-transform: uppercase;
+        font-size: 0.75rem;
+        text-align: left;
+        margin-right: 15px;
+    }
+
+    /* Ajustes específicos de elementos internos */
+    .client-info {
+        flex-direction: row-reverse; /* Nome antes do avatar se preferir, ou ajuste normal */
+        justify-content: flex-end;
+    }
+    
+    .social-list {
+        justify-content: flex-end;
+    }
+
+    .progress-bar-bg {
+        width: 100px; /* Reduz a barra de progresso no mobile */
+    }
+    
+    /* Ações maiores para o dedo */
+    .action-btn {
+        padding: 10px 15px;
+        font-size: 1.1rem;
+    }
+}
