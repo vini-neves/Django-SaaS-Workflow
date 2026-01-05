@@ -31,28 +31,22 @@ document.addEventListener('DOMContentLoaded', function() {
 // =================================================================
 
 function openCreateModal() {
-    // Limpa o formulário
     const form = document.getElementById('clientForm');
     if(form) form.reset();
     
-    // Reseta campos ocultos e títulos
     const idInput = document.getElementById('clientId');
     if(idInput) idInput.value = '';
     
     const title = document.getElementById('modalTitle');
     if(title) title.textContent = 'Cadastrar Novo Cliente';
     
-    // Reseta os toggles visuais
     document.querySelectorAll('.social-toggle-list input[type="checkbox"]').forEach(el => el.checked = false);
     
-    // Padrão Ativo
     const activeCheck = document.getElementById('id_is_active');
     if(activeCheck) activeCheck.checked = true;
 
-    // Remove erros visuais anteriores
     clearErrors();
 
-    // Abre o modal
     if (clientModalInstance) {
         clientModalInstance.show();
     } else {
@@ -65,7 +59,6 @@ function closeClientModal() {
     if (clientModalInstance) {
         clientModalInstance.hide();
     } else {
-        // Fallback de emergência: remove classes manualmente se o Bootstrap falhar
         const modalEl = document.getElementById('clientModal');
         if(modalEl) {
             modalEl.classList.remove('show');
@@ -77,19 +70,26 @@ function closeClientModal() {
     }
 }
 
-function editClient(clientId) {
-    const url = `/projects/api/clients/${clientId}/`; 
+function editClient(buttonElement) {
+  
+    const button = buttonElement.closest('button');
+    
+    const url = button.dataset.url;
+
+    console.log("Buscando dados em:", url);
 
     fetch(url)
         .then(response => {
-            if (!response.ok) throw new Error("Erro na rede ou URL não encontrada");
+            if (!response.ok) throw new Error("Erro na rede ou URL não encontrada (Status: " + response.status + ")");
             return response.json();
         })
         .then(data => {
-            // Preenche ID
+            
             document.getElementById('clientId').value = data.id;
             
-            // Preenche inputs (Função auxiliar setVal)
+            const setVal = (id, val) => { const el = document.getElementById(id); if(el) el.value = val || ''; };
+            const setCheck = (id, condition) => { const el = document.getElementById(id); if(el) el.checked = condition; };
+
             setVal('id_name', data.name);
             setVal('id_cnpj', data.cnpj);
             setVal('id_nome_representante', data.nome_representante);
@@ -97,103 +97,117 @@ function editClient(clientId) {
             setVal('id_data_inicio_contrato', data.data_inicio_contrato);
             setVal('id_data_finalizacao_contrato', data.data_finalizacao_contrato);
             
-            // Checkbox Status
             const activeCheck = document.getElementById('id_is_active');
             if(activeCheck) activeCheck.checked = data.is_active;
 
-            // Toggles Sociais
             const platforms = data.connected_platforms || [];
             setCheck('toggleInstagram', platforms.includes('instagram'));
-            setCheck('toggleLinkedin', platforms.includes('linkedin'));
+            setCheck('toggleLinkedin', platforms.includes('linkedin-oauth2'));
             setCheck('toggleTiktok', platforms.includes('tiktok'));
             setCheck('toggleFacebook', platforms.includes('facebook'));
 
-            // Muda título e abre
             const title = document.getElementById('modalTitle');
             if(title) title.textContent = 'Editar Cliente';
             
-            clearErrors();
+            if (typeof clearErrors === 'function') clearErrors();
             
-            if (clientModalInstance) clientModalInstance.show();
+            if (typeof clientModalInstance !== 'undefined') {
+                clientModalInstance.show();
+            } else {
+                const modalEl = document.getElementById('clientModal');
+                const modal = new bootstrap.Modal(modalEl);
+                modal.show();
+            }
         })
         .catch(error => {
             console.error('Erro:', error);
-            // Fallback: Se não tiver SweetAlert, usa alert normal
-            if (typeof Swal !== 'undefined') {
-                Swal.fire("Erro", "Não foi possível carregar os dados.", "error");
-            } else {
-                alert("Erro ao carregar dados do cliente.");
-            }
+            alert("Erro ao carregar dados: " + error.message);
         });
 }
 
 function saveClient() {
     const form = document.getElementById('clientForm');
     const formData = new FormData(form);
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const clientId = document.getElementById('clientId').value;
     
-    // Tenta pegar o token de várias formas
-    let csrfToken = document.querySelector('[name=csrfmiddlewaretoken]')?.value;
+    let url;
     
-    const url = "/projects/api/clients/save/"; 
+    // VERIFICAÇÃO IMPORTANTE DA URL
+    if (clientId) {
+        // Se certifique que esta URL bate com o urls.py
+        url = `/api/clients/${clientId}/update/`
+    } else {
+        url = "/api/clients/create/";
+    }
+
+    console.log(`Enviando para: ${url}`); // Ajuda a debugar
 
     fetch(url, {
         method: 'POST',
-        headers: {
-            'X-CSRFToken': csrfToken
-        },
+        headers: { 'X-CSRFToken': csrfToken },
         body: formData
     })
-    .then(response => response.json())
+    .then(response => {
+        // Lemos como texto primeiro para ver o que veio (JSON ou HTML de erro)
+        return response.text().then(text => {
+            try {
+                // Tenta converter para JSON
+                const data = JSON.parse(text);
+                
+                if (!response.ok) {
+                    // Se o status for 400 ou 500, tratamos como erro
+                    const error = new Error(data.message || "Erro no servidor");
+                    error.data = data;
+                    throw error;
+                }
+                return data;
+            } catch (e) {
+                // SE CAIR AQUI, O ERRO É HTML
+                console.error("O servidor não retornou JSON. Resposta recebida:", text);
+                throw new Error(`Erro Fatal (Status ${response.status}): Verifique o console para ver o HTML retornado.`);
+            }
+        });
+    })
     .then(data => {
         if (data.status === 'success') {
             closeClientModal();
             if (typeof Swal !== 'undefined') {
                 Swal.fire({
-                    title: "Sucesso!",
-                    text: data.message,
-                    icon: "success",
-                    timer: 1500,
-                    showConfirmButton: false
+                    title: "Sucesso!", text: data.message, icon: "success", timer: 1500, showConfirmButton: false
                 }).then(() => window.location.reload());
             } else {
                 window.location.reload();
             }
-        } else {
-            if (typeof Swal !== 'undefined') {
-                Swal.fire("Atenção", "Verifique os campos em vermelho.", "warning");
-            } else {
-                alert("Verifique os campos.");
-            }
-            showErrors(data.errors);
         }
     })
     .catch(error => {
-        console.error('Erro:', error);
-        alert("Erro de conexão ao salvar.");
+        console.error('Erro detalhado:', error);
+        if (error.data && error.data.errors) {
+            showErrors(error.data.errors); // Mostra campos vermelhos
+        } else {
+            alert(error.message);
+        }
     });
 }
 
 function deleteClient(clientId) {
-    if (typeof Swal !== 'undefined') {
-        Swal.fire({
-            title: 'Tem certeza?',
-            text: "Não será possível reverter!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#ef4444',
-            cancelButtonColor: '#6b7280',
-            confirmButtonText: 'Sim, excluir!',
-            cancelButtonText: 'Cancelar'
-        }).then((result) => {
-            if (result.isConfirmed) {
-                performDelete(clientId);
-            }
-        });
-    } else {
-        if(confirm("Tem certeza que deseja excluir?")) {
-            performDelete(clientId);
+    if (!confirm("Tem certeza que deseja excluir?")) return;
+
+    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
+    const url = `/projects/api/clients/${clientId}/delete/`;
+
+    fetch(url, { 
+        method: 'POST', 
+        headers: { 'X-CSRFToken': csrfToken }
+    })
+    .then(response => {
+        if(response.ok) {
+            window.location.reload();
+        } else {
+            alert("Erro ao excluir cliente.");
         }
-    }
+    });
 }
 
 function performDelete(clientId) {

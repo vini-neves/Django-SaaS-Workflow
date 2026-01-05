@@ -208,37 +208,41 @@ def client_metrics_dashboard(request, pk):
     }
     return render(request, 'projects/client_metrics.html', context)
 
-@method_decorator(csrf_exempt, name='dispatch')
-class AddClientAPI(View):
-    """API Unificada para Criar ou Editar Cliente."""
-    @method_decorator(login_required)
-    def post(self, request, *args, **kwargs):
-        client_id = request.POST.get('client_id')
-        
-        if client_id:
-            client = get_object_or_404(Client, id=client_id)
-            form = ClientForm(request.POST, request.FILES, instance=client)
-            message = 'Cliente atualizado com sucesso!'
-        else:
-            form = ClientForm(request.POST, request.FILES)
-            message = 'Cliente cadastrado com sucesso!'
+@login_required
+@require_POST
+def create_client_api(request):
+    """API exclusiva para CRIAR cliente."""
+    form = ClientForm(request.POST, request.FILES)
+    if form.is_valid():
+        client = form.save()
+        return JsonResponse({
+            'status': 'success',
+            'message': 'Cliente cadastrado com sucesso!',
+            'client_id': client.id
+        })
+    return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
 
-        if form.is_valid():
-            client = form.save()
-            return JsonResponse({
-                'status': 'success',
-                'message': message,
-                'client': {
-                    'id': client.id,
-                    'name': client.name,
-                    'cnpj': client.cnpj,
-                    'nome_representante': client.nome_representante,
-                    'email_representante': client.email_representante,
-                    'is_active': client.is_active
-                }
-            }, status=200 if client_id else 201)
-        else:
-            return JsonResponse({'status': 'error', 'message': 'Erro no formulário', 'errors': form.errors}, status=400)
+@login_required
+@require_POST
+def update_client_api(request, pk):
+    client = get_object_or_404(Client, pk=pk)
+    form = ClientForm(request.POST, request.FILES, instance=client)
+    
+    if form.is_valid():
+        client = form.save()
+        return JsonResponse({
+            'status': 'success', 
+            'message': 'Cliente atualizado com sucesso!'
+        })
+    return JsonResponse({'status': 'error', 'errors': form.errors}, status=400)
+
+@login_required
+@require_POST
+def delete_client_api(request, pk):
+    """API exclusiva para DELETAR cliente."""
+    client = get_object_or_404(Client, pk=pk)
+    client.delete()
+    return JsonResponse({'status': 'success', 'message': 'Cliente removido.'})
 
 @method_decorator(csrf_exempt, name='dispatch')
 class AddProjectAPI(View):

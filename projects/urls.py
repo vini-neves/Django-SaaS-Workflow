@@ -11,12 +11,13 @@ urlpatterns = [
     
     # --- GESTÃO DE CLIENTES ---
     path('clients/', views.client_list_create, name='client_list'),
-    path('api/clients/add/', views.AddClientAPI.as_view(), name='add_client_api'),
-    path('api/clients/<int:pk>/details/', views.client_detail_api, name='client_detail_api'),
     path('clients/<int:pk>/metrics/', views.client_metrics_dashboard, name='client_metrics'),
     path('api/clients/<int:pk>/get/', views.get_client_data_api, name='get_client_data_api'),
-    path('api/clients/save/', views.AddClientAPI.as_view(), name='add_client_api'),
+    path('api/clients/<int:pk>/details/', views.client_detail_api, name='client_detail_api'),
     path('api/clients/list-simple/', views.get_clients_list_api, name='get_clients_list_api'),
+    path('api/clients/create/', views.create_client_api, name='create_client_api'),
+    path('api/clients/<int:pk>/update/', views.update_client_api, name='update_client_api'),
+    path('api/clients/<int:pk>/delete/', views.delete_client_api, name='delete_client_api'),
 
     # --- CALENDÁRIO ---
     path('calendar/', views.calendar_view, name='calendar_view'),
