@@ -5,34 +5,33 @@ from django.contrib.auth.models import AbstractUser
 from django_tenants.models import TenantMixin, DomainMixin
 from django.conf import settings
 
-# 1. Modelo da Agência (Tenant) e Customização
-# TenantMixin faz a mágica de criar um "schema" separado no Postgres
+# 1. Modelo da Agência (Tenant)
 class Agency(TenantMixin):
     name = models.CharField(max_length=255, verbose_name="Nome da Agência")
     created_on = models.DateField(auto_now_add=True)
 
-    # --- CAMPOS DE CUSTOMIZAÇÃO (WHITE-LABEL) ---
+    # Customização White-Label
     logo = models.ImageField(upload_to='logos/', null=True, blank=True)
     primary_color = models.CharField(max_length=7, default='#FFFFFF', verbose_name="Cor Primária")
     secondary_color = models.CharField(max_length=7, default='#000000', verbose_name="Cor Secundária")
-    # Você pode adicionar URLs de fontes do Google Fonts, etc.
 
-    # Configuração obrigatória do django-tenants
     auto_create_schema = True
 
     def __str__(self):
         return self.name
 
-# 2. Modelo de Domínio
-# Diz qual URL pertence a qual Agência
 class Domain(DomainMixin):
-    pass # Não precisamos de campos extras por enquanto
+    pass
 
-# 3. Nosso Novo Modelo de Usuário Customizado
-# Ele é "compartilhado", mas sabe a qual agência o usuário pertence
+# 2. Modelo de Usuário Customizado (Atualizado)
 class CustomUser(AbstractUser):
-    # Linka o usuário a UMA agência.
-    # Usamos models.PROTECT para não deletar a agência se houver usuários nela.
+    ROLES = (
+        ('admin', 'Administrador'),
+        ('editor', 'Editor'),
+        ('viewer', 'Visualizador'),
+    )
+
+    # Link com a Agência
     agency = models.ForeignKey(
         Agency, 
         on_delete=models.PROTECT, 
@@ -41,7 +40,9 @@ class CustomUser(AbstractUser):
         related_name="users"
     )
     
-    # Adicione aqui outros campos que quiser (ex: 'cargo')
+    # --- NOVOS CAMPOS ADICIONADOS ---
+    role = models.CharField(max_length=20, choices=ROLES, default='viewer', verbose_name="Função")
+    avatar = models.ImageField(upload_to='avatars/', null=True, blank=True)
     
     def __str__(self):
         return self.username

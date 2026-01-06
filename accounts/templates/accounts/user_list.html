@@ -1,0 +1,228 @@
+{% extends 'projects/base.html' %}
+{% load static %}
+
+{% block title %}Gerenciamento de Equipe{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/pages/users.css' %}">
+
+    <style>
+        :root {
+          --primary-color: {{ agency_primary_color|default:"#333366" }};
+          --secondary-color: {{ agency_secondary_color|default:"#007bff" }};
+          --text-on-primary: #ffffff;
+          --text-on-secondary: #ffffff;
+          --bg-light: #f8f9fa;
+          --border-color: #dee2e6;
+          --sidebar-width: 250px;
+        }
+
+        .modal {
+        z-index: 100050 !important; 
+        }
+        
+        .modal-backdrop {
+            z-index: 100040 !important; 
+        }
+      </style>
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    
+    <div class="header-wrapper">
+        <div>
+            <h1 class="page-title">Gerenciamento de Equipe</h1>
+            <p class="page-subtitle">{{ users.count }} membros encontrados</p>
+        </div>
+        <button class="btn-primary-custom" onclick="openUserModal()">
+            <i class="fa-solid fa-plus"></i> Novo Membro
+        </button>
+    </div>
+
+    <div class="user-header-controls">
+        <div class="search-bar">
+            <i class="fa-solid fa-magnifying-glass"></i>
+            <input type="text" id="userSearch" placeholder="Buscar por nome, e-mail ou usuário...">
+        </div>
+        <div class="filters-right">
+            {% if is_superuser %}
+            <select class="filter-select" id="agencyFilter">
+                <option value="">Todas Agências</option>
+                {% for agency in agencies %}
+                <option value="{{ agency.name }}">{{ agency.name }}</option>
+                {% endfor %}
+            </select>
+            {% endif %}
+            <select class="filter-select" id="roleFilter">
+                <option value="">Todas Funções</option>
+                <option value="Administrador">Administrador</option>
+                <option value="Editor">Editor</option>
+                <option value="Visualizador">Visualizador</option>
+            </select>
+        </div>
+    </div>
+
+    <div class="modern-table-container">
+        <table class="modern-table user-table">
+            <thead>
+                <tr>
+                    <th style="width: 30%;">Nome / Usuário</th>
+                    <th style="width: 25%;">E-mail</th>
+                    <th style="width: 15%;">Agência</th> <th style="width: 15%;">Função</th>
+                    <th style="width: 10%;">Status</th>
+                    <th style="width: 5%;"></th> </tr>
+            </thead>
+            <tbody id="usersTableBody">
+                {% for u in users %}
+                <tr>
+                    <td>
+                        <div class="user-info-wrapper">
+                            <div class="avatar-circle">
+                                {{ u.first_name|slice:":1" }}{{ u.last_name|slice:":1" }}
+                            </div>
+                            <div>
+                                <span class="user-name-text">{{ u.first_name }} {{ u.last_name }}</span>
+                                <span style="font-size: 0.8rem; color: #6b7280;">@{{ u.username }}</span>
+                            </div>
+                        </div>
+                    </td>
+                    <td style="color: #4b5563;">{{ u.email }}</td>
+                    <td style="font-weight: 500; color: #111827;">
+                        {% if u.agency %}
+                            {{ u.agency.name }}
+                        {% else %}
+                            <span style="color: var(--primary-color); font-weight: 600;">Super Admin</span>
+                        {% endif %}
+                    </td>
+                    <td>
+                        <span class="badge-role role-{{ u.role }}">
+                            {{ u.get_role_display }}
+                        </span>
+                    </td>
+                    <td>
+                        {% if u.is_active %}
+                            <span class="badge-status status-active">Ativo</span>
+                        {% else %}
+                            <span class="badge-status status-inactive">Inativo</span>
+                        {% endif %}
+                    </td>
+                    <td style="text-align: right;">
+                        <button class="btn-icon-action" 
+                                onclick="editUser(this)"
+                                data-id="{{ u.id }}"
+                                data-firstname="{{ u.first_name }}"
+                                data-lastname="{{ u.last_name }}"
+                                data-email="{{ u.email }}"
+                                data-username="{{ u.username }}"
+                                data-agency="{{ u.agency.id|default:'' }}"
+                                data-role="{{ u.role }}"
+                                data-isactive="{{ u.is_active|yesno:'true,false' }}"> 
+                                <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </td>
+                </tr>
+                {% empty %}
+                <tr>
+                    <td colspan="5" style="text-align:center; padding: 40px; color: #6b7280;">
+                        <i class="fa-regular fa-folder-open" style="font-size: 2rem; margin-bottom: 10px; display: block;"></i>
+                        Nenhum membro encontrado.
+                    </td>
+                </tr>
+                {% endfor %}
+            </tbody>
+        </table>
+    </div>
+
+</div> <div class="modal fade" id="userModal" tabindex="-1" aria-hidden="true" style="display: none;">
+    <div class="modal-dialog modal-dialog-centered modal-lg">
+        <div class="modal-content">
+            <div class="modal-header">
+                <h5 class="modal-title" style="font-weight: 700;">Adicionar Novo Membro</h5>
+                <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
+            </div>
+            <div class="modal-body">
+                <form id="createUserForm" data-url="{% url 'create_user_api' %}">
+                    {% csrf_token %}
+                    <input type="hidden" name="user_id" id="editUserId">
+                    
+                    <div class="form-section-title">Informações Pessoais</div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Nome</label>
+                            <input type="text" name="first_name" class="form-control" placeholder="Ex: Maria" required>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Sobrenome</label>
+                            <input type="text" name="last_name" class="form-control" placeholder="Ex: Silva" required>
+                        </div>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">E-mail</label>
+                        <input type="email" name="email" class="form-control" placeholder="email@empresa.com" required>
+                    </div>
+
+                    <div class="mb-3">
+                        <label class="form-label">Nome de Usuário (Login)</label>
+                        <input type="text" name="username" class="form-control" placeholder="Ex: mariasilva" required>
+                    </div>
+
+                    <div class="form-section-title">Organização</div>
+                    <div class="row mb-3">
+                        <div class="col-md-6">
+                            <label class="form-label">Agência</label>
+                            <select name="agency" class="form-control form-select" {% if not is_superuser %}disabled{% endif %}>
+                                {% if is_superuser %}
+                                    <option value="">Selecionar Agência</option>
+                                    {% for agency in agencies %}
+                                        <option value="{{ agency.id }}">{{ agency.name }}</option>
+                                    {% endfor %}
+                                {% else %}
+                                    <option value="{{ user.agency.id }}" selected>{{ user.agency.name }}</option>
+                                {% endif %}
+                            </select>
+                        </div>
+                        <div class="col-md-6">
+                            <label class="form-label">Função</label>
+                            <select name="role" class="form-control form-select">
+                                <option value="admin">Administrador</option>
+                                <option value="editor">Editor</option>
+                                <option value="viewer" selected>Visualizador</option>
+                            </select>
+                        </div>
+                    </div>
+
+                    <div class="form-section-title">Segurança</div>
+                    <div class="mb-4">
+                        <label class="form-label">Senha</label>
+                        <div class="password-wrapper">
+                            <input type="password" name="password" id="userPassword" class="form-control" placeholder="Mínimo 8 caracteres" required>
+                            <i class="fa-regular fa-eye toggle-password" onclick="togglePass()"></i>
+                        </div>
+                    </div>
+
+                    <div class="mb-4">
+                        <div class="form-check form-switch d-flex align-items-center gap-2">
+                            <input class="form-check-input" type="checkbox" id="userActiveSwitch" name="is_active" checked style="width: 3em; height: 1.5em; cursor: pointer;">
+                            <label class="form-check-label" for="userActiveSwitch" style="cursor: pointer; font-weight: 500;">
+                                Usuário Ativo
+                            </label>
+                        </div>
+                        <small class="text-muted">Desative para impedir o acesso deste usuário ao sistema.</small>
+                    </div>
+
+                    <div class="d-flex justify-content-end gap-2 pt-3 border-top">
+                        <button type="button" class="btn btn-light" data-bs-dismiss="modal">Cancelar</button>
+                        <button type="submit" class="btn-primary-custom" style="border-radius: 6px;">Criar Usuário</button>
+                    </div>
+                </form>
+            </div>
+        </div>
+    </div>
+</div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/pages/users.js' %}"></script>
+{% endblock %}
