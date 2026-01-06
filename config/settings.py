@@ -48,7 +48,7 @@ CSRF_TRUSTED_ORIGINS = [
 
 SHARED_APPS = [
     'django_tenants',
-    'tenants',
+    #'tenants',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
