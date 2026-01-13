@@ -19,8 +19,8 @@ from django.contrib.auth import views as auth_views
 from django.core.files.base import ContentFile
 
 # Imports Locais
-from .models import Task, CalendarEvent, Project, Client, SocialPost, SocialAccount, SocialPostDestination
-from .forms import ClientForm, TenantAuthenticationForm, ProjectForm
+from .models import Task, CalendarEvent, Project, Client, SocialPost, SocialAccount, SocialPostDestination, MediaFolder, MediaFile
+from .forms import ClientForm, TenantAuthenticationForm, ProjectForm, MediaFileForm, FolderForm
 from accounts.models import CustomUser
 from .services import MetaService, LinkedInService, TikTokService
 
@@ -952,3 +952,139 @@ add_operational_task_api = AddOperationalTaskAPI.as_view()
 delete_task_api = DeleteTaskAPI.as_view()
 # kanban_update_task já deve ser uma classe, se for, faça:
 kanban_update_task = KanbanUpdateTask.as_view()
+
+@login_required
+def media_manager(request, client_id, folder_id=None):
+    client = get_object_or_404(Client, pk=client_id)
+    
+    # Define pasta atual (Se folder_id for None, estamos na raiz)
+    current_folder = None
+    if folder_id:
+        current_folder = get_object_or_404(MediaFolder, pk=folder_id, client=client)
+
+    # 1. Processar Formulários (POST)
+    if request.method == 'POST':
+        
+        # Criar Pasta
+        if 'create_folder' in request.POST:
+            folder_form = FolderForm(request.POST)
+            if folder_form.is_valid():
+                new_folder = folder_form.save(commit=False)
+                new_folder.client = client
+                new_folder.parent = current_folder
+                new_folder.save()
+                messages.success(request, "Pasta criada com sucesso!")
+                return redirect(request.path)
+
+        # Upload de Arquivos
+        elif 'upload_files' in request.POST:
+            print("--- INICIANDO UPLOAD ---") # DEBUG
+            print(f"Arquivos recebidos no request: {request.FILES}") # DEBUG
+            
+            file_form = MediaFileForm(request.POST, request.FILES)
+            
+            if file_form.is_valid():
+                files = request.FILES.getlist('files')
+                print(f"Quantidade de arquivos validados: {len(files)}") # DEBUG
+                
+                if current_folder:
+                    count = 0
+                    for f in files:
+                        try:
+                            # Tenta criar e salvar
+                            MediaFile.objects.create(folder=current_folder, file=f)
+                            print(f"Arquivo {f.name} salvo no banco e enviado ao R2!") # DEBUG
+                            count += 1
+                        except Exception as e:
+                            print(f"ERRO AO SALVAR {f.name}: {e}") # DEBUG
+
+                    messages.success(request, f"{count} imagens enviadas para o servidor!")
+                else:
+                    print("ERRO: Nenhuma pasta atual selecionada (current_folder é None)") # DEBUG
+                    messages.error(request, "Entre em uma pasta antes de fazer upload.")
+                
+                return redirect(request.path)
+            else:
+                # AQUI É ONDE GERALMENTE FALHA
+                print("ERRO DE VALIDAÇÃO DO FORMULÁRIO:") # DEBUG
+                print(file_form.errors) # VAI MOSTRAR PORQUE O DJANGO RECUSOU
+                messages.error(request, "Erro no formulário. Verifique o terminal.")
+
+    # 2. Preparar dados para exibição (GET)
+    folder_form = FolderForm()
+    file_form = MediaFileForm()
+
+    # Breadcrumbs (Navegação: Início > Pasta A > Pasta B)
+    breadcrumbs = []
+    temp = current_folder
+    while temp:
+        breadcrumbs.insert(0, temp)
+        temp = temp.parent
+
+    # Listar itens da pasta atual
+    subfolders = MediaFolder.objects.filter(client=client, parent=current_folder)
+    files = MediaFile.objects.filter(folder=current_folder) if current_folder else []
+
+    context = {
+        'client': client,
+        'current_folder': current_folder,
+        'breadcrumbs': breadcrumbs,
+        'subfolders': subfolders,
+        'files': files,
+        'folder_form': folder_form,
+        'file_form': file_form,
+    }
+    return render(request, 'projects/media_manager.html', context)
+
+@login_required
+def media_dashboard(request):
+    """
+    Lista todos os clientes para o usuário escolher qual galeria acessar.
+    """
+    # Busca todos os clientes (você pode filtrar apenas ativos se quiser)
+    clients = Client.objects.all().order_by('name')
+    
+    context = {
+        'clients': clients
+    }
+    return render(request, 'projects/media_dashboard.html', context)
+
+@login_required
+def delete_folder(request, folder_id):
+    folder = get_object_or_404(MediaFolder, pk=folder_id)
+    
+    # Segurança: Verificar se a pasta pertence ao cliente do usuário ou lógica similar
+    # (Opcional: Adicionar verificação de tenant aqui se necessário)
+
+    client_id = folder.client.id
+    parent_id = folder.parent.id if folder.parent else None
+    
+    # Ao deletar a pasta, o Django (CASCADE) deleta os arquivos do banco.
+    # O django-storages deve remover do R2 automaticamente se configurado,
+    # mas a lógica de banco é a principal aqui.
+    folder_name = folder.name
+    folder.delete()
+    
+    messages.success(request, f"Pasta '{folder_name}' excluída.")
+    
+    # Redireciona para a pasta pai ou para a raiz
+    if parent_id:
+        return redirect('media_folder', client_id=client_id, folder_id=parent_id)
+    else:
+        return redirect('media_root', client_id=client_id)
+
+@login_required
+def delete_file(request, file_id):
+    file = get_object_or_404(MediaFile, pk=file_id)
+    
+    folder = file.folder
+    client_id = folder.client.id
+    file_name = file.filename
+    
+    # Deleta do banco e do R2
+    file.delete()
+    
+    messages.success(request, f"Arquivo '{file_name}' excluído.")
+    
+    # Redireciona de volta para a pasta onde o arquivo estava
+    return redirect('media_folder', client_id=client_id, folder_id=folder.id)
