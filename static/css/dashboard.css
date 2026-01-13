@@ -1,4 +1,30 @@
 /* static/css/dashboard.css */
+/* --- Container Principal --- */
+.page-container {
+    padding: 20px;
+    max-width: 100%;
+}
+
+/* --- Cabeçalho e Controles --- */
+.header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
 
 .dashboard-header {
     margin-bottom: 30px;

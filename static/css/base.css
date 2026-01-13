@@ -12,6 +12,33 @@ body {
     color: #333;
 }
 
+/* --- Container Principal --- */
+.page-container {
+    padding: 20px;
+    max-width: 100%;
+}
+
+/* --- Cabeçalho e Controles --- */
+.header-wrapper {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 24px;
+}
+
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
+}
+
+.page-subtitle {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin-top: 4px;
+}
+
 .app-container {
     display: flex;
     width: 100%;
@@ -177,14 +204,14 @@ body {
 }
 
 .close-button {
-    color: #aaa;
+    /* color: #aaa;
     font-size: 28px;
     font-weight: bold;
     position: absolute;
     top: 15px;
     right: 20px;
     cursor: pointer;
-    transition: color 0.2s ease;
+    transition: color 0.2s ease; */
 }
 
 .close-button:hover,
@@ -229,21 +256,24 @@ body {
 }
 
 button {
-    background-color: var(--primary-color);
-    color: var(--text-on-primary);
-    border: none;
-    /* padding: 10px 16px; */
-    border-radius: 6px;
-    font-weight: bold;
-    cursor: pointer;
-    transition: background-color 0.3s ease;
-    /* Estilo do botão da sua imagem */
-    background-color: var(--primary-color); /* Vermelho/Laranja como na imagem */
-    color: white;
-    font-weight: 500;
-    text-transform: uppercase;
-    letter-spacing: 0.5px;
-    font-size: 0.9em;
+        background-color: var(--primary-color);; /* Azul forte */
+        color: white;
+        border: none;
+        padding: 10px 20px;
+        border-radius: 8px;
+        font-weight: 600;
+        font-size: 0.9rem;
+        display: flex;
+        align-items: center;
+        gap: 8px;
+        transition: background-color 0.2s;
+        cursor: pointer;
+    }
+    
+    .btn-primary-custom:hover {
+        background-color: var(--secondary-color);; /* Azul mais escuro ao passar o mouse */
+        color: white;
+    }
 }
 
 .modal-content .form-button {

@@ -33,10 +33,12 @@
 {% block title %}Fluxo de Produção{% endblock %}
 
 {% block content %}
-    <div class="kanban-header">
+<div class="page-container">
+    
+    <div class="header-wrapper">
         <div>
-            <h1>Fluxo Operacional</h1>
-            <p>Gerencie a produção de conteúdo desde o briefing até a publicação.</p>
+            <h1 class="page-title">Fluxo Operacional</h1>
+            <p class="page-subtitle">Gerencie a produção de conteúdo desde o briefing até a publicação</p>
         </div>
         <div>
             <a href="{% url 'kanban_general' %}" class="toggle-button" style="text-decoration: none; margin-right: 10px;">

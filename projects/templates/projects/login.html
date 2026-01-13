@@ -31,11 +31,7 @@
     <div class="login-brand-side">
         <div class="brand-content">
             <div class="brand-logo">
-                {% if agency_logo %}
-                    <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 200px;"/>
-                {% else %}
-                    <h1>{{ request.tenant.name }}</h1>
-                {% endif %}
+                <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 200px;"/>
                 <h1>{{ request.tenant.name }}</h1>
             </div>
             <p class="brand-tagline">Gerencie seus projetos, clientes e mídias em um único lugar.</p>
@@ -47,11 +43,7 @@
         <div class="form-container">
             
             <div class="mobile-logo-header">
-                {% if agency_logo %}
-                    <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 50px;"/> {{ request.tenant.name }}
-                {% else %}
-                    <h1>{{ request.tenant.name }}</h1>
-                {% endif %}
+                <img src="{{ agency_logo.url }}" alt="Logo da Agência" class="agency-logo" style="max-height: 50px;"/> {{ request.tenant.name }}
             </div>
 
             <div class="login-header">

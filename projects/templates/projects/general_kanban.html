@@ -4,36 +4,31 @@
 
 {% block extra_css %}
     <link rel="stylesheet" href="{% static 'css/kanban.css' %}">
-    <style>
-        /* Cores específicas para o Kanban Geral */
-        [data-status="todo"] { border-top: 4px solid #999; }
-        [data-status="in_progress"] { border-top: 4px solid #3498db; }
-        [data-status="done"] { border-top: 4px solid #2ecc71; }
-    </style>
 {% endblock %}
 
 {% block title %}Kanban Geral{% endblock %}
 
 {% block content %}
+<div class="page-container">
     
-    <div class="kanban-header">
+    <div class="header-wrapper">
         <div>
-            <h1>Kanban Geral</h1>
-            <p>Tarefas administrativas e rotinas da agência.</p>
+            <h1 class="page-title">Administração da Agência</h1>
+            <p class="page-subtitle">Quadro de Tarefas</p>
         </div>
-        <div>
-            <a href="{% url 'kanban_view' 'operational' %}" class="toggle-button" style="text-decoration: none; margin-right: 10px;">
-                <i data-feather="repeat"></i> <span>Ir para Fluxo Operacional</span>
+    
+        <div style="display: flex; gap: 12px;">
+            <a href="{% url 'kanban_view' 'operational' %}" class="toggle-button">
+                <i data-feather="repeat"></i> <span>Fluxo Operacional</span>
             </a>
             
             <button id="add-task-btn" class="add-task-button">
-                <i data-feather="plus"></i> Nova Tarefa Geral
+                <i data-feather="plus"></i> Nova Tarefa
             </button>
         </div>
     </div>
 
     <div class="kanban-board">
-        
         {% for stage_value, stage_label in stages %}
         <div class="kanban-column" id="column-{{ stage_value }}" data-status="{{ stage_value }}">
             <div class="column-header">
@@ -41,88 +36,127 @@
                 <span class="task-count">0</span>
             </div>
             <div class="column-cards">
-                {# Cards serão inseridos aqui via JS (kanban.js) baseado no JSON #}
+                {# Cards inseridos via JS #}
             </div>
         </div>
         {% endfor %}
-
     </div>
 
     {# --- MODAL DE ADICIONAR TAREFA (GERAL) --- #}
     <div id="add-task-modal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close-button" data-modal-id="add-task-modal">&times;</span>
-            <h2>Nova Tarefa Geral</h2>
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+                <h2 style="margin:0;">Detalhes da Tarefa</h2>
+                <span class="close-button" data-modal-id="add-task-modal" style="cursor: pointer; font-size: 1.5rem;">&times;</span>
+            </div>
+
             <form id="add-task-form">
                 {% csrf_token %}
-                
                 <input type="hidden" name="kanban_type" value="general"> 
 
                 <div class="form-group">
-                    <label for="task-title">Título:</label>
-                    <input type="text" id="task-title" name="title" required class="form-input" placeholder="Ex: Pagar conta de luz">
+                    <label for="task-title">Título</label>
+                    <input type="text" id="task-title" name="title" required class="form-input" placeholder="Ex: Comprar materiais de escritório">
                 </div>
                 
                 <div class="form-group">
-                    <label for="task-description">Descrição:</label>
-                    <textarea id="task-description" name="description" class="form-input" rows="3"></textarea>
+                    <label for="task-description">Descrição</label>
+                    <textarea id="task-description" name="description" class="form-input" rows="4" placeholder="Adicione detalhes sobre essa tarefa..."></textarea>
                 </div>
                 
                 <div class="form-group">
-                    <label for="task-project">Projeto (Opcional):</label>
-                    <select id="task-project" name="project" class="form-input">
-                        <option value="" selected>Sem projeto vinculado</option>
-                        {% for project in projects %}
-                            <option value="{{ project.id }}">{{ project.name }}</option>
-                        {% endfor %}
-                    </select>
+                    <label>Prioridade</label>
+                    <div class="priority-selector">
+                        <input type="radio" id="prio-high" name="priority" value="high" class="priority-option">
+                        <label for="prio-high" class="priority-label">
+                            <i data-feather="flag" style="width: 14px;"></i> Alta
+                        </label>
+
+                        <input type="radio" id="prio-medium" name="priority" value="medium" class="priority-option" checked>
+                        <label for="prio-medium" class="priority-label">
+                            <i data-feather="flag" style="width: 14px;"></i> Média
+                        </label>
+
+                        <input type="radio" id="prio-low" name="priority" value="low" class="priority-option" checked>
+                        <label for="prio-low" class="priority-label">
+                            <i data-feather="flag" style="width: 14px;"></i> Baixa
+                        </label>
+                    </div>
+                </div>
+
+                <div class="form-group">
+                    <label>Tags</label>
+                    <div class="tags-selector">
+                         <input type="checkbox" id="tag-fin" name="tags" value="Financeiro" class="tag-checkbox">
+                         <label for="tag-fin" class="tag-check-label">Financeiro</label>
+
+                         <input type="checkbox" id="tag-rh" name="tags" value="RH" class="tag-checkbox">
+                         <label for="tag-rh" class="tag-check-label">RH</label>
+
+                         <input type="checkbox" id="tag-esc" name="tags" value="Escritório" class="tag-checkbox">
+                         <label for="tag-esc" class="tag-check-label">Escritório</label>
+                    </div>
+                    <select name="project" style="display:none;"><option value="">Default</option></select>
                 </div>
                 
                 <div class="form-group">
-                    <label for="task-assigned-to">Atribuir a:</label>
+                    <label for="task-assigned-to">Responsáveis</label>
                     <select id="task-assigned-to" name="assigned_to" class="form-input">
-                        <option value="">Ninguém</option>
-                        
+                        <option value="">Selecione...</option>
                         {% for u in agency_users %}
                             <option value="{{ u.id }}">{{ u.username }}</option>
-                        {% empty %}
-                            <option value="" disabled>Nenhum colaborador cadastrado</option>
                         {% endfor %}
-                        
                     </select>
                 </div>
                 
-                <button type="submit" class="modal-button" style="background-color: var(--primary-color);">Criar Tarefa</button>
+                <div class="modal-footer">
+                    <button type="button" class="btn-cancel close-button" data-modal-id="add-task-modal">Cancelar</button>
+                    <button type="submit" class="btn-save"><i data-feather="save" style="width: 16px; margin-right: 5px;"></i> Salvar</button>
+                </div>
             </form>
         </div>
     </div>
     
-    {# --- MODAL DE DETALHES (Compartilhado) --- #}
+    {# --- MODAL DE DETALHES --- #}
     <div id="task-details-modal" class="modal" style="display: none;">
         <div class="modal-content">
-            <span class="close-button" data-modal-id="task-details-modal">&times;</span>
-            <div id="task-details-content">
-                </div>
+            <span class="close-button" data-modal-id="task-details-modal" style="float: right; cursor: pointer;">&times;</span>
+            <div id="task-details-content"></div>
         </div>  
     </div>
 
     <script>
-        // Dados iniciais vindos da View
         const KANBAN_INITIAL_DATA = {{ kanban_data|safe }};
-        
-        // URLs e Tokens
         const CSRF_TOKEN = "{{ csrf_token }}";
         const KANBAN_UPDATE_URL = "{% url 'kanban_update_task' %}";
-        
-        // Note: Usamos a mesma API de Add Task, ela vai ler o input hidden 'kanban_type'
         const ADD_TASK_API_URL = "{% url 'add_task_api' %}"; 
-        
         const GET_TASK_DETAILS_URL_BASE = "{% url 'get_task_details_api' 0 %}".replace('0', '');
         const DELETE_TASK_URL_BASE = "{% url 'delete_task_api' 0 %}".replace('0', '');
     </script>
 
 {% endblock %}
-
 {% block extra_js %}
+    {# 1. Definição de Variáveis Globais #}
+    <script>
+        window.KANBAN_INITIAL_DATA = {{ kanban_data_json|safe }};
+        window.CSRF_TOKEN = "{{ csrf_token }}";
+        
+        // URLs Fixas
+        window.KANBAN_UPDATE_URL = "{% url 'kanban_update_task' %}";
+        window.ADD_TASK_API_URL = "{% url 'add_task_api' %}"; 
+        
+        // URLs Dinâmicas (Correção das barras)
+        // O replace agora troca '0/' por vazio. Isso evita o erro da barra dupla (//).
+        window.GET_TASK_DETAILS_URL_BASE = "{% url 'get_task_details_api' 0 %}".replace('0/', '');
+        window.DELETE_TASK_URL_BASE = "{% url 'delete_task_api' 0 %}".replace('0/', '');
+    </script>
+
+    {# 2. Importação do JS #}
     <script src="{% static 'js/kanban.js' %}"></script>
+    
+    <script>
+        document.addEventListener("DOMContentLoaded", function() {
+            if (typeof feather !== 'undefined') feather.replace();
+        });
+    </script>
 {% endblock %}

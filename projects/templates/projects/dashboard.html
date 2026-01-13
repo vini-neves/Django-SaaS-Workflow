@@ -10,10 +10,15 @@
 
 {% block content %}
 
-    <div class="dashboard-header">
-        <h1 id="dynamic-greeting" data-username="{{ user.first_name }}">Olá, {{ user.first_name }}!</h1>
-        <p>Aqui está um resumo da sua agência hoje.</p>
-    </div>
+<div class="page-container">
+    
+    <div class="header-wrapper">
+        <div>
+            <h1 class="page-title"id="dynamic-greeting" data-username="{{ user.first_name }}">Olá, {{ user.first_name }}!</h1>
+            <p class="page-subtitle">Aqui está um resumo da sua agência hoje.</p>
+        </div>
+</div>
+    
 
     <div class="stats-grid">
         <div class="stat-card">

@@ -1,331 +1,431 @@
-// static/js/kanban.js
+/* static/js/kanban.js */
 
-document.addEventListener('DOMContentLoaded', () => {
-    
-    // --- Seletores do DOM ---
-    const kanbanBoard = document.querySelector('.kanban-board');
-    const columns = document.querySelectorAll('.kanban-column');
-    
-    // --- Seletores de Botões ---
-    const addTaskBtn = document.getElementById('add-task-btn');
-    const toggleDoneBtn = document.getElementById('toggle-done-column');
+document.addEventListener('DOMContentLoaded', function() {
+    console.log('Kanban JS iniciado'); // Debug
 
-    // --- Seletores do Modal (Adicionar Tarefa) ---
-    const addTaskModal = document.getElementById('add-task-modal');
-    const addTaskForm = document.getElementById('add-task-form');
-    const closeTaskModal = addTaskModal.querySelector('.close-button');
+    // 1. Inicializa o Quadro (Lendo do window)
+    if (window.KANBAN_INITIAL_DATA) {
+        renderBoard(window.KANBAN_INITIAL_DATA);
+    } else {
+        console.error('Dados iniciais (KANBAN_INITIAL_DATA) não encontrados.');
+    }
 
-    // --- Seletores do Modal (Detalhes da Tarefa) ---
-    const detailsModal = document.getElementById('task-details-modal');
-    const detailsContent = document.getElementById('task-details-content');
-    const closeDetailsModal = detailsModal.querySelector('.close-button');
+    // 2. Configura Eventos Globais (Botão Nova Tarefa está aqui dentro)
+    setupGlobalEventListeners();
 
-    let draggedCard = null;
+    // 3. Inicializa Drag and Drop
+    setupDragAndDrop();
 
-    // --- Funções de Ajuda ---
+    // 4. Ativa ícones Feather
+    if (typeof feather !== 'undefined') {
+        feather.replace();
+    }
+});
 
-    function updateTaskCounts() {
-        columns.forEach(column => {
-            const count = column.querySelector('.column-cards').children.length;
-            column.querySelector('.task-count').textContent = count;
+/**
+ * Renderiza todas as colunas e cards
+ */
+function renderBoard(data) {
+    // Limpa visualmente as colunas
+    document.querySelectorAll('.column-cards').forEach(el => el.innerHTML = '');
+
+    // --- CORREÇÃO DO ERRO ---
+    // Cria uma lista única de tarefas, não importa se veio como Objeto ou Array
+    let allTasks = [];
+
+    if (Array.isArray(data)) {
+        // Se já for array, usa direto
+        allTasks = data;
+    } else if (typeof data === 'object' && data !== null) {
+        // Se for objeto (ex: {'todo': [t1], 'done': [t2]}), junta tudo numa lista só
+        Object.values(data).forEach(columnTasks => {
+            if (Array.isArray(columnTasks)) {
+                allTasks = allTasks.concat(columnTasks);
+            }
         });
     }
 
-    // --- CRIAÇÃO DE CARD ATUALIZADA ---
-    function createTaskCard(task) {
-        const card = document.createElement('div');
-        card.classList.add('kanban-card');
-        card.setAttribute('draggable', 'true');
-        card.dataset.taskId = task.id;
-        card.dataset.status = task.status;
+    // Agora 'allTasks' é garantidamente um Array, então o forEach funciona
+    allTasks.forEach(task => {
+        const column = document.getElementById(`column-${task.status}`);
+        if (column) {
+            const container = column.querySelector('.column-cards');
+            
+            const safeTask = {
+                ...task,
+                priority: task.priority || 'low',
+                id: task.id
+            };
 
-        // Avatar (Iniciais)
-        const avatar = task.assigned_to_username
-            ? `<div class="card-assignee-avatar" title="${task.assigned_to_username}">${task.assigned_to_initials}</div>`
-            : `<div class="card-assignee-avatar" title="Ninguém atribuído">?</div>`;
+            const cardHTML = createCardHTML(safeTask);
+            container.insertAdjacentHTML('beforeend', cardHTML);
+        }
+    });
 
-        // Botão Deletar
-        const deleteBtn = `
-            <div class="card-delete-btn" title="Excluir tarefa">
-                <i data-feather="trash-2" style="width:16px; height:16px;"></i>
-            </div>
-        `;
+    updateTaskCounts();
+    if (typeof feather !== 'undefined') feather.replace();
+}
 
-        card.innerHTML = `
-            <div class="card-header">
-                <h4 class="kanban-card-title">${task.title}</h4>
-                ${deleteBtn}
-            </div>
-            <p class="kanban-card-description">${task.description || ''}</p>
-            <div class="card-footer">
-                <span class="kanban-card-project">${task.project_name}</span>
-                ${avatar}
-            </div>
-        `;
+/**
+ * GERA O HTML DO CARD
+ */
+function createCardHTML(task) {
+    let priorityClass = 'priority-low';
+    let priorityLabel = 'Baixa';
 
-        // --- Event Listeners do Card ---
-        card.addEventListener('dragstart', (e) => {
-            draggedCard = card;
-            setTimeout(() => card.classList.add('dragging'), 0);
+    // Lógica corrigida para suportar as 3 cores
+    if (task.priority === 'high') {
+        priorityClass = 'priority-high';
+        priorityLabel = 'Alta';
+    } else if (task.priority === 'medium') {
+        priorityClass = 'priority-medium';
+        priorityLabel = 'Média';
+    } else {
+        priorityClass = 'priority-low';
+        priorityLabel = 'Baixa';
+    }
+    
+    let tagsHTML = '';
+    if (task.tags && Array.isArray(task.tags)) {
+        task.tags.forEach(tag => {
+            tagsHTML += `<span class="context-tag">${tag}</span>`;
         });
+    }
 
-        card.addEventListener('dragend', () => {
-            if (draggedCard) { // Prevenção de erro
-                draggedCard.classList.remove('dragging');
-            }
-            draggedCard = null;
-        });
+    const userInitials = task.assigned_to_username 
+        ? task.assigned_to_username.substring(0, 2).toUpperCase() 
+        : '--';
+
+    return `
+    <div class="kanban-card" draggable="true" data-id="${task.id}" data-priority="${task.priority}">
+        <div class="card-header">
+            <span class="priority-pill ${priorityClass}">
+                <i data-feather="flag" style="width: 12px; height: 12px;"></i> ${priorityLabel}
+            </span>
+            
+            <div class="card-actions" style="position: absolute; top: 15px; right: 15px;">
+                <button type="button" class="btn-delete-task" data-id="${task.id}" title="Excluir">
+                    <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                </button>
+            </div>
+        </div>
+
+        <h4 class="kanban-card-title">${task.title}</h4>
         
-       
-        card.addEventListener('click', (e) => {
-           
-            if (e.target.closest('.card-delete-btn')) {
+        <div class="card-footer">
+            <div class="tags-container">
+                ${tagsHTML}
+            </div>
+            <div class="card-assignee-avatar" title="${task.assigned_to_username || 'Sem responsável'}">
+            ${userInitials}
+            </div>
+        </div>
+    </div>
+    `;
+}
+
+/**
+ * Event Listeners Globais (Incluindo o BOTÃO NOVA TAREFA)
+ */
+function setupGlobalEventListeners() {
+    const board = document.querySelector('.kanban-board');
+
+    // A. Cliques no Board (Lixeira e Detalhes)
+    if (board) {
+        board.addEventListener('click', function(e) {
+            const deleteBtn = e.target.closest('.btn-delete-task');
+            if (deleteBtn) {
+                e.stopPropagation(); 
+                const taskId = deleteBtn.dataset.id;
+                confirmDeleteTask(taskId);
                 return;
             }
-            openDetailsModal(task.id);
-        });
 
-        // --- DELETAR TAREFA ---
-        card.querySelector('.card-delete-btn').addEventListener('click', (e) => {
-            e.stopPropagation(); // Impede que o modal de detalhes abra
-            deleteTask(task.id, card);
-        });
-
-        return card;
-    }
-
-    async function saveTaskChanges(taskId, newStatus, columnElement) {
-        const newOrderList = Array.from(columnElement.querySelectorAll('.kanban-card'))
-                                    .map(card => card.dataset.taskId);
-        
-        try {
-            const response = await fetch(KANBAN_UPDATE_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
-                body: JSON.stringify({
-                    taskId: taskId,
-                    newStatus: newStatus,
-                    newOrderList: newOrderList
-                })
-            });
-            if (response.ok) updateTaskCounts();
-        } catch (error) {
-            console.error('Erro na API de atualização:', error);
-        }
-    }
-
-    // --- NOVO: Deletar Tarefa (com SweetAlert) ---
-    function deleteTask(taskId, cardElement) {
-        Swal.fire({
-            title: 'Você tem certeza?',
-            text: "Esta ação não pode ser revertida!",
-            icon: 'warning',
-            showCancelButton: true,
-            confirmButtonColor: '#d33',
-            cancelButtonColor: '#3085d6',
-            confirmButtonText: 'Sim, excluir!',
-            cancelButtonText: 'Cancelar'
-        }).then(async (result) => {
-            if (result.isConfirmed) {
-                try {
-                    const response = await fetch(`${DELETE_TASK_URL_BASE}${taskId}/delete/`, {
-                        method: 'DELETE',
-                        headers: { 'X-CSRFToken': CSRF_TOKEN }
-                    });
-                    
-                    if (response.ok) {
-                        cardElement.remove(); // Remove o card do DOM
-                        updateTaskCounts(); // Atualiza a contagem
-                        Swal.fire('Excluído!', 'A tarefa foi excluída.', 'success');
-                    } else {
-                        Swal.fire('Erro!', 'Não foi possível excluir a tarefa.', 'error');
-                    }
-                } catch (error) {
-                    Swal.fire('Erro!', 'Erro de rede.', 'error');
-                }
+            const card = e.target.closest('.kanban-card');
+            if (card) {
+                const taskId = card.dataset.id;
+                openTaskDetails(taskId);
             }
         });
     }
 
-    // --- NOVO: Abrir Modal de Detalhes ---
-    async function openDetailsModal(taskId) {
-        try {
-            const response = await fetch(`${GET_TASK_DETAILS_URL_BASE}${taskId}/details/`);
-            if (!response.ok) throw new Error('Falha ao buscar dados.');
-            
-            const task = await response.json();
-            
-            // Popula o conteúdo do modal
-            detailsContent.innerHTML = `
-                <h2>${task.title}</h2>
-                <div class="detail-grid">
-                    <div class="detail-item">
-                        <strong>Status</strong>
-                        <span>${task.status}</span>
-                    </div>
-                    <div class="detail-item">
-                        <strong>Projeto</strong>
-                        <span>${task.project_name}</span>
-                    </div>
-                    <div class="detail-item">
-                        <strong>Criado em</strong>
-                        <span>${task.created_at}</span>
-                    </div>
-                    <div class="detail-item">
-                        <strong>Atribuído a</strong>
-                        <span>${task.assigned_to}</span>
-                    </div>
-                </div>
-                <div class="detail-item detail-description">
-                    <strong>Descrição</strong>
-                    <p>${task.description.replace(/\n/g, '<br>')}</p>
-                </div>
-            `;
-            detailsModal.style.display = 'flex';
-            document.body.classList.add('modal-open');
-        } catch (error) {
-            console.error("Erro ao abrir detalhes:", error);
-            Swal.fire('Erro', 'Não foi possível carregar os detalhes da tarefa.', 'error');
-        }
-    }
+    // B. Botão "Nova Tarefa" (Abre Modal)
+    const addTaskBtn = document.getElementById('add-task-btn');
+    if(addTaskBtn) {
+        // Remove listener antigo clonando (segurança contra múltiplos eventos)
+        const newBtn = addTaskBtn.cloneNode(true);
+        addTaskBtn.parentNode.replaceChild(newBtn, addTaskBtn);
 
-    // --- Inicialização do Kanban ---
-    function initializeKanban() {
-        for (const status in KANBAN_INITIAL_DATA) {
-            const columnCards = document.querySelector(`#column-${status} .column-cards`);
-            if (columnCards) {
-                KANBAN_INITIAL_DATA[status].forEach(task => {
-                    columnCards.appendChild(createTaskCard(task));
-                });
+        newBtn.addEventListener('click', (e) => {
+            e.preventDefault();
+            console.log('Botão Nova Tarefa clicado!'); // LOG PARA DEBUG
+            const modal = document.getElementById('add-task-modal');
+            if(modal) {
+                modal.style.display = 'flex';
+            } else {
+                console.error('Erro: Modal #add-task-modal não encontrado no HTML.');
             }
-        }
-        updateTaskCounts();
-        feather.replace(); // Ativa os ícones nos cards
+        });
+    } else {
+        console.error('Erro: Botão #add-task-btn não encontrado no HTML.');
     }
 
-    // --- Lógica de Drag & Drop ---
+    // C. Form "Nova Tarefa" (Salvar)
+    const addForm = document.getElementById('add-task-form');
+    if(addForm) {
+        const newForm = addForm.cloneNode(true);
+        addForm.parentNode.replaceChild(newForm, addForm);
+        newForm.addEventListener('submit', handleAddTaskSubmit);
+    }
+
+    // D. Fechar Modais
+    document.querySelectorAll('.close-button').forEach(btn => {
+        btn.addEventListener('click', (e) => {
+            const modalId = e.target.dataset.modalId;
+            const modal = document.getElementById(modalId) || e.target.closest('.modal');
+            if(modal) modal.style.display = 'none';
+        });
+    });
+
+    // E. Fechar clicando fora
+    window.onclick = function(event) {
+        if (event.target.classList.contains('modal')) {
+            event.target.style.display = "none";
+        }
+    }
+}
+
+/**
+ * Lógica de Drag and Drop
+ */
+function setupDragAndDrop() {
+    const columns = document.querySelectorAll('.kanban-column');
+
+    document.addEventListener('dragstart', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+            e.target.classList.add('dragging');
+            e.dataTransfer.setData('text/plain', e.target.dataset.id);
+        }
+    });
+
+    document.addEventListener('dragend', (e) => {
+        if (e.target.classList.contains('kanban-card')) {
+            e.target.classList.remove('dragging');
+        }
+    });
+
     columns.forEach(column => {
         column.addEventListener('dragover', (e) => {
-            e.preventDefault();
+            e.preventDefault(); 
             const afterElement = getDragAfterElement(column.querySelector('.column-cards'), e.clientY);
-            if (draggedCard) {
+            const draggable = document.querySelector('.dragging');
+            const container = column.querySelector('.column-cards');
+            
+            if (draggable) {
                 if (afterElement == null) {
-                    column.querySelector('.column-cards').appendChild(draggedCard);
+                    container.appendChild(draggable);
                 } else {
-                    column.querySelector('.column-cards').insertBefore(draggedCard, afterElement);
+                    container.insertBefore(draggable, afterElement);
                 }
             }
         });
 
-        column.addEventListener('drop', () => {
-            if (draggedCard) {
-                const newStatus = column.dataset.status;
-                const taskId = draggedCard.dataset.taskId;
-                draggedCard.dataset.status = newStatus;
-                saveTaskChanges(taskId, newStatus, column.querySelector('.column-cards'));
-            }
+        column.addEventListener('drop', (e) => {
+            e.preventDefault();
+            const draggable = document.querySelector('.dragging');
+            if (!draggable) return;
+
+            const newStatus = column.dataset.status;
+            const taskId = draggable.dataset.id;
+            
+            updateTaskStatus(taskId, newStatus);
+            updateTaskCounts();
         });
     });
+}
 
-    function getDragAfterElement(container, y) {
-        const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
-        return draggableElements.reduce((closest, child) => {
-            const box = child.getBoundingClientRect();
-            const offset = y - box.top - box.height / 2;
-            if (offset < 0 && offset > closest.offset) {
-                return { offset: offset, element: child };
-            } else { return closest; }
-        }, { offset: Number.NEGATIVE_INFINITY }).element;
-    }
+function getDragAfterElement(container, y) {
+    const draggableElements = [...container.querySelectorAll('.kanban-card:not(.dragging)')];
 
-    // --- Lógica do Modal (Adicionar Tarefa) ---
-    addTaskBtn.addEventListener('click', () => {
-        addTaskModal.style.display = 'flex';
-        document.body.classList.add('modal-open');
-    });
-    closeTaskModal.addEventListener('click', () => {
-        addTaskModal.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        addTaskForm.reset();
-    });
-
-    // --- Lógica do Modal (Detalhes) ---
-    closeDetailsModal.addEventListener('click', () => {
-        detailsModal.style.display = 'none';
-        document.body.classList.remove('modal-open');
-        detailsContent.innerHTML = ""; // Limpa o conteúdo
-    });
-
-    window.addEventListener('click', (event) => {
-        if (event.target == addTaskModal) {
-            addTaskModal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            addTaskForm.reset();
-        }
-        if (event.target == detailsModal) {
-            detailsModal.style.display = 'none';
-            document.body.classList.remove('modal-open');
-            detailsContent.innerHTML = "";
-        }
-    });
-
-    // --- Lógica de Submissão do Formulário (Adicionar Tarefa) ---
-    addTaskForm.addEventListener('submit', async (e) => {
-        e.preventDefault();
-        const formData = new FormData(addTaskForm);
-        const data = Object.fromEntries(formData.entries());
-
-        try {
-            const response = await fetch(ADD_TASK_API_URL, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                    'X-CSRFToken': CSRF_TOKEN
-                },
-                body: JSON.stringify(data)
-            });
-
-            if (response.ok) {
-                const new_task_data = await response.json();
-                const todoColumn = document.querySelector('#column-todo .column-cards');
-                const newCard = createTaskCard(new_task_data);
-                todoColumn.appendChild(newCard);
-                updateTaskCounts();
-                feather.replace(); // Ativa o ícone no novo card
-                
-                addTaskModal.style.display = 'none';
-                addTaskForm.reset();
-                Swal.fire('Sucesso!', 'Nova tarefa criada.', 'success');
-            } else {
-                Swal.fire('Erro!', 'Não foi possível criar a tarefa.', 'error');
-            }
-        } catch (error) {
-            Swal.fire('Erro!', 'Erro de rede.', 'error');
-        }
-    });
-
-    // --- NOVO: Lógica para Ocultar Coluna "Concluído" ---
-    toggleDoneBtn.addEventListener('click', () => {
-        const doneColumn = document.getElementById('column-done');
-        const icon = toggleDoneBtn.querySelector('i');
-        const span = toggleDoneBtn.querySelector('span');
-
-        doneColumn.classList.toggle('is-hidden');
-        
-        if (doneColumn.classList.contains('is-hidden')) {
-            // Se está oculta
-            icon.innerHTML = feather.icons.eye.toSvg();
-            span.textContent = 'Mostrar Concluídos';
+    return draggableElements.reduce((closest, child) => {
+        const box = child.getBoundingClientRect();
+        const offset = y - box.top - box.height / 2;
+        if (offset < 0 && offset > closest.offset) {
+            return { offset: offset, element: child };
         } else {
-            // Se está visível
-            icon.innerHTML = feather.icons['eye-off'].toSvg();
-            span.textContent = 'Ocultar Concluídos';
+            return closest;
         }
-    });
+    }, { offset: Number.NEGATIVE_INFINITY }).element;
+}
 
-    // --- Inicializar o Kanban ---
-    initializeKanban();
-});
+/**
+ * Atualiza status (Backend)
+ */
+function updateTaskStatus(taskId, newStatus) {
+    // Usa window.URL e window.CSRF
+    const url = window.KANBAN_UPDATE_URL;
+    const csrf = window.CSRF_TOKEN;
+
+    if (!url) { console.error("URL de update não definida"); return; }
+
+    fetch(url, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+            'X-CSRFToken': csrf
+        },
+        body: JSON.stringify({
+            task_id: taskId,
+            status: newStatus
+        })
+    })
+    .then(response => response.json())
+    .then(data => {
+        if (data.status !== 'success') {
+            alert('Erro ao mover tarefa. Recarregue a página.');
+        }
+    })
+    .catch(error => console.error('Erro de rede:', error));
+}
+
+/**
+ * Salvar Nova Tarefa
+ */
+function handleAddTaskSubmit(e) {
+    e.preventDefault();
+    
+    const form = e.target;
+    const submitBtn = form.querySelector('button[type="submit"]');
+    
+    const originalText = submitBtn.innerHTML;
+    submitBtn.innerHTML = 'Salvando...';
+    submitBtn.disabled = true;
+
+    const formData = new FormData(form);
+
+    fetch(window.ADD_TASK_API_URL, {
+        method: 'POST',
+        body: formData,
+        headers: {
+            'X-CSRFToken': window.CSRF_TOKEN
+        }
+    })
+    .then(response => {
+        // Se a resposta não for OK (ex: 500 ou 404), pegamos o texto (HTML) para ver o erro
+        if (!response.ok) {
+            return response.text().then(text => {
+                throw new Error(`Erro do Servidor (${response.status}): \n${text}`);
+            });
+        }
+        return response.json();
+    })
+    .then(data => {
+        if (data.status === 'success') {
+            const column = document.getElementById(`column-${data.task.status}`);
+            if (column) {
+                const container = column.querySelector('.column-cards');
+                const cardHTML = createCardHTML(data.task);
+                container.insertAdjacentHTML('beforeend', cardHTML);
+                updateTaskCounts();
+                if (typeof feather !== 'undefined') feather.replace();
+            }
+            form.reset();
+            document.getElementById('add-task-modal').style.display = 'none';
+        } else {
+            alert('Erro de validação: ' + JSON.stringify(data.errors));
+        }
+    })
+    .catch(error => {
+        console.error('ERRO DETALHADO:', error);
+        
+        // Se o erro for HTML, tenta mostrar só a mensagem principal no alert
+        if (error.message.includes('<!DOCTYPE html>')) {
+             alert('Erro Interno no Servidor (500). Verifique o terminal do Django ou o Console do navegador para detalhes.');
+        } else {
+             alert('Erro ao salvar: ' + error.message);
+        }
+    })
+    .finally(() => {
+        submitBtn.innerHTML = originalText;
+        submitBtn.disabled = false;
+    });
+}
+
+/**
+ * Abre Detalhes da Tarefa
+ */
+function openTaskDetails(taskId) {
+    const modal = document.getElementById('task-details-modal');
+    const contentDiv = document.getElementById('task-details-content');
+    const url = window.GET_TASK_DETAILS_URL_BASE + taskId + '/';
+    
+    contentDiv.innerHTML = '<div style="padding:20px; text-align:center;">Carregando...</div>';
+    modal.style.display = 'flex';
+
+    fetch(url)
+        .then(res => res.json())
+        .then(data => {
+            if(data.error) throw new Error(data.error);
+
+            contentDiv.innerHTML = `
+                <h2>${data.title}</h2>
+                <div class="detail-grid">
+                    <div class="detail-item"><strong>Status:</strong> ${data.status_display}</div>
+                    <div class="detail-item"><strong>Prioridade:</strong> ${data.priority_display}</div>
+                    <div class="detail-description">
+                        <strong>Descrição:</strong>
+                        <p>${data.description || 'Nenhuma descrição.'}</p>
+                    </div>
+                    <div class="detail-item"><strong>Responsável:</strong> ${data.assigned_to_username || 'Ninguém'}</div>
+                </div>
+                
+                <div style="margin-top: 20px; text-align: right; border-top: 1px solid #eee; padding-top: 15px;">
+                     <button id="btn-modal-delete" style="background:none; border:none; color: #EF4444; cursor:pointer; font-weight:bold; display:flex; align-items:center; gap:5px; margin-left:auto;">
+                        <i data-feather="trash-2" style="width:16px;"></i> Excluir Tarefa
+                     </button>
+                </div>
+            `;
+            
+            document.getElementById('btn-modal-delete').onclick = () => confirmDeleteTask(taskId);
+            if (typeof feather !== 'undefined') feather.replace();
+        })
+        .catch(err => {
+            contentDiv.innerHTML = `<p style="color:red; text-align:center;">Erro ao carregar detalhes.</p>`;
+        });
+}
+
+/**
+ * Excluir Tarefa
+ */
+function confirmDeleteTask(taskId) {
+    if(confirm('Tem certeza que deseja excluir esta tarefa permanentemente?')) {
+        const url = window.DELETE_TASK_URL_BASE + taskId + '/';
+
+        fetch(url, {
+            method: 'DELETE',
+            headers: {
+                'X-CSRFToken': window.CSRF_TOKEN,
+                'Content-Type': 'application/json'
+            }
+        })
+        .then(res => {
+            if(res.ok) {
+                const card = document.querySelector(`.kanban-card[data-id="${taskId}"]`);
+                if(card) card.remove();
+                document.getElementById('task-details-modal').style.display = 'none';
+                updateTaskCounts();
+            } else {
+                alert('Erro ao excluir tarefa.');
+            }
+        })
+        .catch(err => console.error(err));
+    }
+}
+
+function updateTaskCounts() {
+    document.querySelectorAll('.kanban-column').forEach(col => {
+        const count = col.querySelectorAll('.kanban-card').length;
+        const badge = col.querySelector('.task-count');
+        if(badge) badge.textContent = count;
+    });
+}
