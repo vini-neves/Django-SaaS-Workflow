@@ -1,0 +1,48 @@
+<div id="modal-folder" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 400px;">
+        <span onclick="closeModal(this)" class="close-button">&times;</span>
+        <h2>Nova Pasta</h2>
+        <form method="POST">
+            {% csrf_token %}
+            <input type="hidden" name="create_folder" value="1">
+            <div class="form-group">
+                <label>Nome da Pasta</label>
+                <input type="text" name="name" class="form-input" placeholder="Ex: Fotos Tratadas" required>
+            </div>
+            <div class="modal-footer">
+                <button type="submit" class="btn-save" style="width:100%">Criar Pasta</button>
+            </div>
+            
+        </form>
+    </div>
+</div>
+
+<div id="modal-upload" class="modal" style="display:none;">
+    <div class="modal-content" style="width: 500px;">
+        <span onclick="closeModal(this)" class="close-button">&times;</span>
+        <h2>Upload de Imagens</h2>
+        
+        <form method="POST" enctype="multipart/form-data">
+            {% csrf_token %}
+            <input type="hidden" name="upload_files" value="1">
+            
+            <div class="form-group">
+                <label class="upload-area">
+                    <i data-feather="image" style="width:40px; height:40px; color:#9CA3AF; margin-bottom:10px;"></i>
+                    <p style="margin:0; font-weight:600; color:#374151;">Clique para selecionar</p>
+                    <p style="margin:5px 0 0 0; font-size:0.8rem; color:#6B7280;">Suporta múltiplos arquivos</p>
+                    
+                    <input type="file" 
+                           name="files" 
+                           multiple 
+                           style="position: absolute; top:0; left:0; width:100%; height:100%; opacity:0; cursor:pointer;"
+                           onchange="this.previousElementSibling.innerText = this.files.length + ' arquivos selecionados'">
+                </label>
+            </div>
+            
+            <div class="modal-footer">
+                <button type="submit" class="btn-save" style="width:100%">Iniciar Upload</button>
+            </div>
+        </form>
+    </div>
+</div>

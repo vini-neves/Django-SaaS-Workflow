@@ -1,6 +1,7 @@
 from django.db import models
 from django.conf import settings
 import secrets
+import os
 
 # --- ESCOLHAS GLOBAIS (STATUS) ---
 
@@ -213,6 +214,17 @@ class Task(models.Model):
         null=True,  # <--- ESSENCIAL
         blank=True  # <--- ESSENCIAL
     )
+
+    PRIORITY_CHOICES = [
+        ('high', 'Alta'),
+        ('medium', 'Média'),
+        ('low', 'Baixa'),
+    ]
+    priority = models.CharField(
+        max_length=10, 
+        choices=PRIORITY_CHOICES, 
+        default='low' # Importante ter um default para tarefas antigas
+    )
     
     title = models.CharField(max_length=255)
     description = models.TextField(blank=True, null=True)
@@ -242,9 +254,30 @@ class Task(models.Model):
     def to_dict(self):
         """ Retorna dados para o Frontend (JSON) """
         
-        # CORREÇÃO 2: Proteção contra erro 'NoneType has no attribute name'
         project_name = "Sem Projeto"
+        initials = '--'
         
+        if self.assigned_to:
+            # 1. Pega os campos diretamente, garantindo que não seja None
+            first = (self.assigned_to.first_name or "").strip()
+            last = (self.assigned_to.last_name or "").strip()
+            
+            # 2. Se tiver os dois nomes, pega a 1ª letra de cada
+            if first and last:
+                initials = f"{first[0]}{last[0]}"
+            
+            # 3. Se só tiver o primeiro nome (mas composto), tenta pegar do split
+            elif first:
+                names = first.split()
+                if len(names) >= 2:
+                     initials = f"{names[0][0]}{names[-1][0]}"
+                else:
+                    initials = first[:2]
+            
+            # 4. Fallback: Se não tiver nome nenhum, usa o username
+            else:
+                initials = self.assigned_to.username[:2]
+
         if self.project:
             project_name = self.project.name
         elif self.social_post and self.social_post.client:
@@ -256,16 +289,16 @@ class Task(models.Model):
             'title': self.title,
             'description': self.description or "Nenhuma descrição.",
             'status': self.status,
-            'status_display': self.get_status_display(),
-            
-            'project_name': project_name, # <--- Usa a variável protegida
-            
+            'priority': self.priority,
+            'status_display': self.get_status_display(),    
+            'project_name': project_name,
+            'order': self.order,
             'created_at': self.created_at.strftime('%d/%m/%Y'),
-            # Proteção extra para data
             'updated_at': self.updated_at.strftime('%d/%m/%Y') if self.updated_at else "", 
-            'assigned_to': self.assigned_to.username if self.assigned_to else None,
+            'assigned_to_username': self.assigned_to.username if self.assigned_to else None,
             'assigned_to_initials': self.assigned_to.username[0].upper() if self.assigned_to and self.assigned_to.username else '?',
             'social_post_id': self.social_post.id if self.social_post else None,
+            'assigned_to_initials': initials.upper(),
         }
 
 # --- 7. EVENTOS DO CALENDÁRIO (SIMPLES) ---
@@ -292,7 +325,7 @@ class CalendarEvent(models.Model):
     ]
 
     # Conexão real com o Cliente
-    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='events')
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, null=True, blank=True)
     
     title = models.CharField(max_length=200, blank=True) # Título pode ser vazio se tiver cliente
     date = models.DateField()
@@ -310,3 +343,44 @@ class CalendarEvent(models.Model):
 
     def __str__(self):
         return f"{self.client.name} - {self.date}"
+
+def client_r2_path(instance, filename):
+    # Organiza no R2 assim: media/client_1/nomedapasta/arquivo.jpg
+    # Isso evita bagunça no bucket
+    folder_name = instance.folder.name if instance.folder else 'root'
+    return f'clients/client_{instance.folder.client.id}/{folder_name}/{filename}'
+
+class MediaFolder(models.Model):
+    name = models.CharField("Nome da Pasta", max_length=255)
+    client = models.ForeignKey(Client, on_delete=models.CASCADE, related_name='folders')
+    
+    # Auto-relacionamento: Permite criar subpastas dentro de pastas
+    parent = models.ForeignKey('self', on_delete=models.CASCADE, null=True, blank=True, related_name='subfolders')
+    
+    created_at = models.DateTimeField(auto_now_add=True)
+    
+    class Meta:
+        ordering = ['name']
+        # Evita criar duas pastas com mesmo nome no mesmo lugar
+        unique_together = ['parent', 'name', 'client'] 
+
+    def __str__(self):
+        return self.name
+
+class MediaFile(models.Model):
+    folder = models.ForeignKey(MediaFolder, on_delete=models.CASCADE, related_name='files')
+    # O upload_to chama a função acima para decidir o caminho no R2
+    file = models.FileField(upload_to=client_r2_path) 
+    filename = models.CharField(max_length=255, blank=True)
+    file_size = models.PositiveIntegerField(null=True, blank=True)
+    uploaded_at = models.DateTimeField(auto_now_add=True)
+    
+    def save(self, *args, **kwargs):
+        # Salva metadados automaticamente antes de enviar
+        if self.file:
+            self.filename = os.path.basename(self.file.name)
+            self.file_size = self.file.size
+        super().save(*args, **kwargs)
+
+    def __str__(self):
+        return self.filename

@@ -24,6 +24,7 @@
       :root {
         --primary-color: {{ agency_primary_color|default:"#333366" }};
         --secondary-color: {{ agency_secondary_color|default:"#007bff" }};
+        --primary-hover: oklch(from var(--primary-color) calc(l - 0.1) c h);
         --text-on-primary: #ffffff;
         --text-on-secondary: #ffffff;
         --bg-light: #f8f9fa;
@@ -113,6 +114,11 @@
                 <a href="{% url 'user_list' %}" class="nav-link {% if request.resolver_match.url_name == 'user_list' %}active{% endif %}">
                     <i class="fa-solid fa-users-gear"></i>
                     <span>Usuários</span>
+                </a>
+
+                <a href="{% url 'media_dashboard' %}" 
+                    class="nav-link {% if 'media' in request.path %}active{% endif %}">
+                        <i data-feather="hard-drive"></i> <span>Servidor de Imagens</span>
                 </a>
 
                 <a href="#" class="nav-link" id="nav-metrics-btn">

@@ -1,0 +1,50 @@
+{% extends "projects/base.html" %}
+{% load static %}
+
+{% block title %}Central de Mídia{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/media_manager.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    
+    <div class="header-wrapper">
+        <div>
+            <h1 class="page-title">Central de Mídia</h1>
+            <p style="color: #6B7280; margin-top: 5px;">Selecione um cliente para acessar os arquivos</p>
+        </div>
+    </div>
+
+    <div class="media-container">
+        
+        <div class="section-title">
+            {{ clients.count }} clientes encontrados
+        </div>
+
+        <div class="media-grid">
+            {% for client in clients %}
+                <a href="{% url 'media_root' client.id %}" class="media-item">
+                    
+                    <div class="media-thumb-area">
+                        <svg class="folder-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+                        </svg>
+                    </div>
+
+                    <div class="media-info-area">
+                        <span class="item-name">{{ client.name }}</span>
+                        <span class="item-meta">{{ client.folders.count }} pastas</span>
+                    </div>
+                </a>
+            {% empty %}
+                <div style="grid-column: 1/-1; text-align: center; padding: 40px; color: #6B7280;">
+                    <p>Nenhum cliente cadastrado.</p>
+                </div>
+            {% endfor %}
+        </div>
+
+    </div>
+</div>
+{% endblock %}

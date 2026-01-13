@@ -1,6 +1,6 @@
 # projects/forms.py
 from django import forms
-from .models import Client, Project
+from .models import Client, Project, MediaFolder
 from django.contrib.auth.forms import AuthenticationForm
 from django.core.exceptions import ValidationError
 
@@ -118,3 +118,32 @@ class ProjectForm(forms.ModelForm):
             # Filtra o dropdown de Clientes para mostrar APENAS
             # os clientes da agência (tenant) atual.
             self.fields['client'].queryset = Client.objects.filter()
+
+class FolderForm(forms.ModelForm):
+    class Meta:
+        model = MediaFolder
+        fields = ['name']
+        widgets = {
+            'name': forms.TextInput(attrs={'class': 'form-input', 'placeholder': 'Ex: Ensaio Nike 2024'})
+        }
+
+# Widget customizado para permitir "multiple" no HTML
+class MultipleFileInput(forms.ClearableFileInput):
+    allow_multiple_selected = True
+
+class MultipleFileField(forms.FileField):
+    def __init__(self, *args, **kwargs):
+        kwargs.setdefault("widget", MultipleFileInput())
+        super().__init__(*args, **kwargs)
+
+    def clean(self, data, initial=None):
+        single_file_clean = super().clean
+        # Importante: Se vier uma lista, valida cada um.
+        if isinstance(data, (list, tuple)):
+            result = [single_file_clean(d, initial) for d in data]
+        else:
+            result = single_file_clean(data, initial)
+        return result
+
+class MediaFileForm(forms.Form):
+    files = MultipleFileField(label='Selecione as imagens', required=True)

@@ -18,8 +18,26 @@ import os
 BASE_DIR = Path(__file__).resolve().parent.parent
 
 
-# Quick-start development settings - unsuitable for production
-# See https://docs.djangoproject.com/en/5.2/howto/deployment/checklist/
+STORAGES = {
+    # Gerenciamento de arquivos de mídia (Uploads) -> Vai para o Cloudflare R2
+    "default": {
+        "BACKEND": "storages.backends.s3boto3.S3Boto3Storage",
+        "OPTIONS": {
+            "access_key": config('R2_ACCESS_KEY_ID'),
+            "secret_key": config('R2_SECRET_ACCESS_KEY'),
+            "bucket_name": config('R2_BUCKET_NAME'),
+            "endpoint_url": config('R2_ENDPOINT_URL'),
+            "region_name": "auto",
+            "signature_version": "s3v4",
+            "querystring_auth": True,
+            "custom_domain": "pub-b8657b7ea8b548f9a6d5a7eb461f1e7a.r2.dev",
+        },
+    },
+    # Gerenciamento de arquivos estáticos (CSS, JS) -> Continua local
+    "staticfiles": {
+        "BACKEND": "django.contrib.staticfiles.storage.StaticFilesStorage",
+    },
+}
 
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = config('SECRET_KEY')
@@ -55,6 +73,7 @@ SHARED_APPS = [
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    'storages', 
     'accounts',
 ]
 

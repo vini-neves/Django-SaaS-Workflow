@@ -8,7 +8,14 @@ urlpatterns = [
     path('', views.dashboard, name='dashboard'), 
     path('kanban/', views.kanban_view, {'kanban_type': 'general'}, name='kanban_general'),
     path('kanban/operational/', views.kanban_view, {'kanban_type': 'operational'}, name='kanban_operational'),
-    
+
+    # --- KANBAN ---
+    path('kanban/<str:kanban_type>/', views.kanban_view, name='kanban_view'),
+    path('api/add-task/', views.add_task_api, name='add_task_api'),
+    path('api/update-task/', views.kanban_update_task, name='kanban_update_task'),
+    path('api/get-task/<int:pk>/', views.get_task_details_api, name='get_task_details_api'),
+    path('api/delete-task/<int:pk>/', views.delete_task_api, name='delete_task_api'),
+
     # --- GESTÃO DE CLIENTES ---
     path('clients/', views.client_list_create, name='client_list'),
     path('clients/<int:pk>/metrics/', views.client_metrics_dashboard, name='client_metrics'),
@@ -28,12 +35,6 @@ urlpatterns = [
     # --- POSTAGENS E SOCIAL MEDIA ---
     path('social/', views.social_dashboard, name='social_dashboard'),
     path('api/social/create-post/', views.CreateSocialPostAPI.as_view(), name='create_social_post_api'),
-    
-    # --- APIs DE TAREFAS ---
-    path('api/task/update-status/', views.KanbanUpdateTask.as_view(), name='kanban_update_task'),
-    path('api/task/add/', views.AddTaskAPI.as_view(), name='add_task_api'),
-    path('api/task/<int:pk>/details/', views.get_task_details_api, name='get_task_details_api'),
-    path('api/task/<int:pk>/delete/', views.DeleteTaskAPI.as_view(), name='delete_task_api'),
 
     #URL do Dashboard
     path('', views.dashboard, name='dashboard'),
@@ -63,12 +64,6 @@ urlpatterns = [
     path('api/social/send-approval/<int:post_id>/', views.send_approval_link, name='send_approval_link'),
     path('approval/<str:token>/', views.external_approval_view, name='external_approval_view'), 
     path('api/approval/action/', views.approval_action, name='approval_action'),
-
-    # Kanban Unificado (Geral e Operacional)
-    path('kanban/<str:kanban_type>/', views.kanban_view, name='kanban_view'),
-    
-    # API para Mover Cards (Drag & Drop)
-    path('api/task/update-status/', views.KanbanUpdateTask.as_view(), name='kanban_update_task'),
 
     # APIs de Criação
     path('api/task/add-operational/', views.AddOperationalTaskAPI.as_view(), name='add_operational_task'),

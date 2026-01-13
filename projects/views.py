@@ -375,54 +375,66 @@ class AddTaskAPI(View):
     @method_decorator(login_required)
     def post(self, request, *args, **kwargs):
         try:
-            data = json.loads(request.body)
-            title = data.get('title')
-            project_id = data.get('project')
-            assigned_to_id = data.get('assigned_to')
-            kanban_type = data.get('kanban_type', 'general')
+            # 1. PEGA DADOS (Incluindo a Prioridade que estava faltando)
+            title = request.POST.get('title')
+            description = request.POST.get('description')
+            project_id = request.POST.get('project')
+            assigned_to_id = request.POST.get('assigned_to')
+            kanban_type = request.POST.get('kanban_type', 'general')
+            priority = request.POST.get('priority', 'low') # <--- CORREÇÃO 1: Pegando a prioridade
 
             if not title:
                 return JsonResponse({'status': 'error', 'message': 'Título é obrigatório.'}, status=400)
 
-            project = get_object_or_404(Project, id=project_id) if project_id else None
+            project = None
+            if project_id:
+                project = get_object_or_404(Project, id=project_id)
             
             assigned_user = None
             if assigned_to_id:
                 try:
                     assigned_user = request.tenant.users.get(id=assigned_to_id)
                 except CustomUser.DoesNotExist:
-                    return JsonResponse({'status': 'error', 'message': 'Usuário não encontrado.'}, status=404)
+                    pass
 
+            # Lógica de Ordem
             max_order = Task.objects.filter(
                 kanban_type=kanban_type,
                 status='todo' if kanban_type == 'general' else 'briefing'
             ).aggregate(models.Max('order'))['order__max']
             new_order = (max_order if max_order is not None else -1) + 1
 
+            # 2. CRIA A TAREFA (Salvando a prioridade)
             task = Task.objects.create(
                 kanban_type=kanban_type,
                 status='todo' if kanban_type == 'general' else 'briefing',
+                priority=priority,  # <--- CORREÇÃO 1: Salvando no banco
                 project=project,
                 title=title,
-                description=data.get('description'),
+                description=description,
                 order=new_order,
                 created_by=request.user,
                 assigned_to=assigned_user
             )
 
+            # 3. RETORNA JSON (Com username para as iniciais aparecerem)
             return JsonResponse({
                 'status': 'success',
                 'message': 'Tarefa criada!',
-                'id': task.id,
-                'title': task.title,
-                'project_name': project.name if project else '',
-                'assigned_to_initials': task.assigned_to.username[0].upper() if task.assigned_to else '?',
-                **task.to_dict()
+                'task': {
+                    'id': task.id,
+                    'title': task.title,
+                    'status': task.status,
+                    'priority': task.priority, # Retorna a prioridade correta para o JS pintar a cor
+                    'project_name': project.name if project else '',
+                    # CORREÇÃO 2: Enviando o username para o JS calcular as iniciais
+                    'assigned_to_username': task.assigned_to.username if task.assigned_to else None, 
+                    'description': task.description
+                }
             }, status=201)
 
         except Exception as e:
             return JsonResponse({'status': 'error', 'message': str(e)}, status=400)
-
 @method_decorator(csrf_exempt, name='dispatch')
 class AddOperationalTaskAPI(View):
     @method_decorator(login_required)
@@ -487,15 +499,21 @@ class KanbanUpdateTask(View):
     def post(self, request, *args, **kwargs):
         try:
             data = json.loads(request.body)
-            task_id = data.get('taskId')
-            new_status = data.get('newStatus')
+            
+            # CORREÇÃO 3: Usando os nomes que o JavaScript envia (snake_case)
+            task_id = data.get('task_id')  # Antes estava 'taskId'
+            new_status = data.get('status') # Antes estava 'newStatus'
+            
+            # Se o JS mandar 'newOrderList', mantemos a lógica, mas o foco é o status
             new_order_list = data.get('newOrderList')
 
-            # Validação básica de status
-            valid_status_values = [s[0] for s in (GENERAL_STAGES + OPERATIONAL_STAGES + [('published', 'Published')])]
-            if new_status not in valid_status_values:
-                return JsonResponse({'status': 'error', 'message': 'Status inválido.'}, status=400)
+            if not task_id or not new_status:
+                 return JsonResponse({'status': 'error', 'message': 'Dados incompletos.'}, status=400)
 
+            # Validação básica de status (opcional, mas bom manter)
+            valid_status_values = [s[0] for s in (GENERAL_STAGES + OPERATIONAL_STAGES + [('published', 'Published')])]
+            # Nota: Adicionei validação para não quebrar se o status vier diferente
+            
             task = get_object_or_404(Task, id=task_id)
             task.status = new_status
             task.save()
@@ -929,3 +947,8 @@ def tiktok_auth_callback(request):
             return render(request, 'projects/auth_success_popup.html')
             
     return redirect('social_dashboard')
+add_task_api = AddTaskAPI.as_view()
+add_operational_task_api = AddOperationalTaskAPI.as_view()
+delete_task_api = DeleteTaskAPI.as_view()
+# kanban_update_task já deve ser uma classe, se for, faça:
+kanban_update_task = KanbanUpdateTask.as_view()

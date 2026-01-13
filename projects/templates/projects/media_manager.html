@@ -1,0 +1,121 @@
+{% extends "projects/base.html" %}
+{% load static %}
+
+{% block title %}Servidor de Imagens - {{ client.name }}{% endblock %}
+
+{% block extra_css %}
+    <link rel="stylesheet" href="{% static 'css/media_manager.css' %}">
+{% endblock %}
+
+{% block content %}
+<div class="page-container">
+    
+    <div class="header-wrapper">
+        <div>
+            <h1 class="page-title">Galeria: {{ client.name }}</h1>
+            <div class="breadcrumb">
+                <a href="{% url 'media_root' client.id %}"><i data-feather="home" style="width:16px;"></i> Início</a>
+                {% for crumb in breadcrumbs %}
+                    <span>/</span>
+                    <a href="{% url 'media_folder' client.id crumb.id %}">{{ crumb.name }}</a>
+                {% endfor %}
+            </div>
+        </div>
+        
+        <div style="display: flex; gap: 10px;">
+            <button onclick="openModal('modal-folder')" class="toggle-button">
+                <i data-feather="folder-plus"></i> Nova Pasta
+            </button>
+            
+            {% if current_folder %}
+            <button onclick="openModal('modal-upload')" class="add-task-button">
+                <i data-feather="upload-cloud"></i> Upload Imagens
+            </button>
+            {% endif %}
+        </div>
+    </div>
+
+    <div class="media-container">
+        
+        <div class="section-title">
+            {% with total=subfolders.count|add:files.count %}
+                {% if total == 0 %} Pasta vazia {% elif total == 1 %} 1 item {% else %} {{ total }} itens {% endif %}
+            {% endwith %}
+        </div>
+
+        <div class="media-grid">
+            
+            {% if current_folder %}
+                 <a href="{% if current_folder.parent %}{% url 'media_folder' client.id current_folder.parent.id %}{% else %}{% url 'media_root' client.id %}{% endif %}" class="media-item" style="background-color: #F3F4F6; justify-content: center; align-items: center; min-height: auto; height: 180px;">
+                    <i data-feather="corner-up-left" style="width:32px; height:32px; color:#6B7280; margin-bottom: 10px;"></i>
+                    <span class="item-name" style="text-align: center; font-size: 1rem;">Voltar</span>
+                </a>
+            {% endif %}
+
+            {% for folder in subfolders %}
+            <div class="media-item" onclick="location.href='{% url 'media_folder' client.id folder.id %}'">
+    
+                <form action="{% url 'delete_folder' folder.id %}" method="POST">
+                    {% csrf_token %}
+                    
+                    <button type="button" 
+                            class="delete-btn" 
+                            onclick="confirmDelete(event, 'Excluir Pasta?', 'Tem certeza que deseja excluir a pasta {{ folder.name }} e TUDO dentro dela?')" 
+                            title="Excluir Pasta">
+                        <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </form>
+
+                    <div class="media-thumb-area">
+                        <svg class="folder-icon" viewBox="0 0 24 24" fill="currentColor">
+                            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
+                        </svg>
+                    </div>
+                    <div class="media-info-area">
+                        <span class="item-name">{{ folder.name }}</span>
+                        <span class="item-meta">{{ folder.subfolders.count|add:folder.files.count }} items</span>
+                    </div>
+                </div>
+            {% endfor %}
+
+            {% for file in files %}
+            <div class="media-item" onclick="window.open('{{ file.file.url }}', '_blank')">
+    
+                <form action="{% url 'delete_file' file.id %}" method="POST">
+                    {% csrf_token %}
+                    
+                    <button type="button" 
+                            class="delete-btn" 
+                            onclick="confirmDelete(event, 'Excluir Arquivo?', 'Deseja excluir permanentemente o arquivo {{ file.filename }}?')" 
+                            title="Excluir Arquivo">
+                        <i data-feather="trash-2" style="width: 16px; height: 16px;"></i>
+                    </button>
+                </form>
+
+                    <div class="media-thumb-area">
+                        {% if file.filename|lower|slice:"-3:" in "jpg,png,peg,gif,webp" %}
+                            <img src="{{ file.file.url }}" class="file-thumb-img" loading="lazy">
+                        {% else %}
+                            <svg class="file-icon" viewBox="0 0 24 24" fill="currentColor">
+                                <path d="M14 2H6c-1.1 0-1.99.9-1.99 2L4 20c0 1.1.9 2 2 2h12c1.1 0 2-.9 2-2V8l-6-6zm2 16H8v-2h8v2zm0-4H8v-2h8v2zm-3-5V3.5L18.5 9H13z"/>
+                            </svg>
+                        {% endif %}
+                    </div>
+                    <div class="media-info-area">
+                        <span class="item-name" title="{{ file.filename }}">{{ file.filename }}</span>
+                        <span class="item-meta">{{ file.file_size|filesizeformat }}</span>
+                    </div>
+                </div>
+            {% endfor %}
+        </div>
+    </div>
+
+</div>
+
+{% include "projects/includes/media_modals.html" %}
+
+{% endblock %}
+
+{% block extra_js %}
+    <script src="{% static 'js/media_manager.js' %}"></script>
+{% endblock %}
