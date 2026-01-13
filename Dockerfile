@@ -20,6 +20,13 @@ RUN pip install -r requirements.txt
 
 # 3. Copia o código
 COPY . /app/
+
+RUN echo "==========================================" && \
+    echo "       LISTANDO ARQUIVOS COPIADOS" && \
+    echo "==========================================" && \
+    ls -R /app && \
+    echo "=========================================="
+
 ENV SECRET_KEY=django-insecure-z3#bm50(&%a4peq8+#o8q@fwv5440o9hz2a)^tw%ou1c$n_in5
 ENV DATABASE_NAME=dummy_db
 ENV DATABASE_USER=dummy_user
