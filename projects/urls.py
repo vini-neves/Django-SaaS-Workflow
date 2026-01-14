@@ -90,4 +90,5 @@ urlpatterns = [
     path('media/folder/<int:folder_id>/delete/', views.delete_folder, name='delete_folder'),
     path('media/file/<int:file_id>/delete/', views.delete_file, name='delete_file'),
     path('api/upload/photo/', views.upload_photo_api, name='api_upload_photo'),
+    path('media/download-batch/', views.download_batch, name='media_download_batch'),
 ]

@@ -1,7 +1,7 @@
 import json
 import secrets
 import datetime
-import base64
+from django.utils.text import slugify
 import requests # Movido para o topo
 from django.shortcuts import render, redirect, get_object_or_404
 from django.http import JsonResponse, HttpResponseBadRequest
@@ -17,7 +17,9 @@ from django.contrib import messages
 from django.utils import timezone
 from django.contrib.auth import views as auth_views
 from django.core.files.base import ContentFile
-
+import zipfile
+import io
+from django.http import HttpResponse
 # Imports Locais
 from .models import Task, CalendarEvent, Project, Client, SocialPost, SocialAccount, SocialPostDestination, MediaFolder, MediaFile
 from .forms import ClientForm, TenantAuthenticationForm, ProjectForm, MediaFileForm, FolderForm
@@ -1133,3 +1135,47 @@ def upload_photo_api(request):
         # Log do erro no terminal do servidor para você debugar se precisar
         print(f"ERRO API UPLOAD: {str(e)}")
         return JsonResponse({'status': 'error', 'message': str(e)}, status=500)
+    
+def download_batch(request):
+    if request.method == 'POST':
+        file_ids = request.POST.getlist('selected_files')
+        download_token = request.POST.get('download_token')
+        if not file_ids:
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+
+        # Busca os arquivos
+        files = MediaFile.objects.filter(id__in=file_ids)
+
+        if not files.exists():
+            return redirect(request.META.get('HTTP_REFERER', '/'))
+
+        # --- CORREÇÃO DO NOME DO ARQUIVO ---
+        # Pegamos o cliente do primeiro arquivo da lista para nomear o ZIP
+        first_file = files.first()
+        client_name = slugify(first_file.folder.client.name) # Ex: "nike-global"
+        zip_filename = f"imagens_{client_name}.zip"
+        # -----------------------------------
+
+        zip_buffer = io.BytesIO()
+        try:
+            with zipfile.ZipFile(zip_buffer, 'w', zipfile.ZIP_DEFLATED) as zip_file:
+                for media_file in files:
+                    try:
+                        file_content = media_file.file.read()
+                        zip_file.writestr(media_file.filename, file_content)
+                    except Exception as e:
+                        print(f"Erro ao ler arquivo {media_file.filename}: {e}")
+                        continue
+        except Exception as e:
+             print(f"Erro geral no ZIP: {e}")
+
+        zip_buffer.seek(0)
+        response = HttpResponse(zip_buffer, content_type='application/zip')
+        
+        # AQUI ESTÁ A LINHA CORRIGIDA (com o f-string e a variável certa)
+        response['Content-Disposition'] = f'attachment; filename="{zip_filename}"'
+        if download_token:
+            response.set_cookie('download_token', download_token, max_age=10)
+        return response
+    
+    return redirect('/')
