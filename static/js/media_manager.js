@@ -56,47 +56,60 @@ function confirmDelete(event, title, text) {
         }
     });
 }
-
 async function uploadInBatch(inputElement) {
-    const files = inputElement.files;
+    // 1. Verificação de Segurança da Biblioteca
+    if (typeof Swal === 'undefined') {
+        alert("ERRO: A biblioteca SweetAlert2 não foi carregada no HTML.");
+        return;
+    }
+
+    const files = Array.from(inputElement.files); // Garante que é um Array
     const total = files.length;
     
     if (total === 0) return;
 
-    // 1. Abre o SweetAlert de Carregamento (Loading)
-    // 'allowOutsideClick: false' impede que o usuário clique fora e cancele o envio
+    // 2. Abre o Alerta de Progresso
     Swal.fire({
-        title: 'Enviando Fotos',
-        html: `Preparando envio de <b>${total}</b> arquivos...`,
+        title: 'Iniciando Upload...',
+        html: `Preparando fila de <b>${total}</b> arquivos.`,
         allowOutsideClick: false,
         allowEscapeKey: false,
-        showConfirmButton: false, // Esconde botão OK enquanto carrega
+        showConfirmButton: false,
         didOpen: () => {
-            Swal.showLoading(); // Mostra o spinner girando
+            Swal.showLoading();
         }
     });
 
-    const csrfToken = document.querySelector('[name=csrfmiddlewaretoken]').value;
-    const clientId = document.getElementById('clientId').value; 
+    // Pega os tokens necessários
+    const csrfInput = document.querySelector('[name=csrfmiddlewaretoken]');
+    const clientIdInput = document.getElementById('clientId');
+
+    if (!csrfInput || !clientIdInput) {
+        Swal.fire('Erro', 'Não foi possível encontrar o Token ou o ID do Cliente.', 'error');
+        return;
+    }
+
+    const csrfToken = csrfInput.value;
+    const clientId = clientIdInput.value;
 
     let successCount = 0;
     let errorCount = 0;
 
-    // Loop: Envia UM arquivo de cada vez
-    for (let i = 0; i < total; i++) {
+    // 3. O LOOP MÁGICO (Um por um)
+    // Usamos 'for...of' porque ele respeita o 'await'. 
+    // Se usar 'forEach', ele tenta enviar tudo de uma vez e trava no arquivo 6.
+    for (const [index, file] of files.entries()) {
+        
+        // Atualiza a mensagem na tela
+        const msg = `Enviando <b>${index + 1}</b> de <b>${total}</b>...<br><small style="color:#666">${file.name}</small>`;
+        if(Swal.getHtmlContainer()) Swal.getHtmlContainer().innerHTML = msg;
+
         const formData = new FormData();
-        formData.append('foto', files[i]); 
-        formData.append('client_id', clientId); 
+        formData.append('foto', file); // Nome do campo esperado no Django
+        formData.append('client_id', clientId);
 
         try {
-            // 2. Atualiza o texto do SweetAlert com o progresso
-            // Usamos Swal.getHtmlContainer() para mudar o texto sem fechar o modal
-            const progressText = `Enviando arquivo <b>${i + 1}</b> de ${total}<br><small>${files[i].name}</small>`;
-            if (Swal.getHtmlContainer()) {
-                Swal.getHtmlContainer().innerHTML = progressText;
-            }
-            
-            // Faz o envio
+            // AWAIT é o segredo: O código PARA aqui e espera o upload terminar antes de ir pro próximo
             const response = await fetch('/api/upload/photo/', { 
                 method: 'POST',
                 headers: { 'X-CSRFToken': csrfToken },
@@ -106,40 +119,34 @@ async function uploadInBatch(inputElement) {
             if (response.ok) {
                 successCount++;
             } else {
-                console.error(`Erro no arquivo ${files[i].name}`);
+                console.error(`Erro servidor no arquivo ${file.name}`);
                 errorCount++;
             }
-
         } catch (err) {
-            console.error(err);
+            console.error(`Erro de rede no arquivo ${file.name}`, err);
             errorCount++;
         }
     }
 
-    // 3. Resultado Final
-    // Define o ícone e a mensagem baseados no resultado
+    // 4. Relatório Final
     let iconType = 'success';
-    let titleText = 'Upload Concluído!';
+    let titleText = 'Finalizado!';
     
-    if (errorCount > 0 && successCount > 0) {
-        iconType = 'warning';
-        titleText = 'Concluído com Alertas';
-    } else if (errorCount > 0 && successCount === 0) {
-        iconType = 'error';
-        titleText = 'Falha no Upload';
+    if (errorCount > 0) {
+        iconType = successCount > 0 ? 'warning' : 'error';
+        titleText = 'Atenção no Resultado';
     }
 
     Swal.fire({
         title: titleText,
         html: `
-            Total enviado: <b>${total}</b><br>
-            <span style="color:var(--c-green)">Sucesso: ${successCount}</span><br>
-            <span style="color:var(--c-red)">Erros: ${errorCount}</span>
+            Processo finalizado.<br>
+            <b style="color:var(--c-green)">Sucesso: ${successCount}</b><br>
+            <b style="color:var(--c-red)">Falhas: ${errorCount}</b>
         `,
         icon: iconType,
         confirmButtonText: 'OK'
     }).then(() => {
-        // Recarrega a página ao clicar em OK
         location.reload();
     });
 }
