@@ -1,176 +1,148 @@
 /* static/css/media_manager.css */
 
-/* --- ESTILO GERAL DA PÁGINA --- */
-.media-container {
+/* --- PAGE LAYOUT & HEADER --- */
+.page-container {
     margin-top: 20px;
+    padding: 0 20px; /* Add side padding for smaller screens */
 }
 
-/* Título da Seção (Igual ao "12 client folders" da imagem) */
-.section-title {
-    font-size: 1rem;
-    color: #6B7280;
-    font-weight: 500;
-    margin-bottom: 15px;
-}
-
-
-/* --- GRID DOS CARTÕES (Pastas e Arquivos) --- */
-.media-grid {
-    display: grid;
-    /* Define o tamanho fixo dos cartões, similar à imagem */
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: 24px; /* Espaço maior entre os cartões */
-    padding-bottom: 40px;
-}
-
-
-/* --- CARTÃO DE MÍDIA (Pasta ou Arquivo) --- */
-.media-item {
-    background: #fff;
-    /* Cor de fundo creme sutil, similar à imagem */
-    background-color: #FDFCF5; 
-    border: 1px solid #E5E7EB;
-    border-radius: 16px; /* Bordas bem arredondadas */
-    padding: 24px; /* Espaçamento interno generoso */
-    text-align: left; /* Texto alinhado à esquerda */
-    transition: all 0.2s ease;
-    cursor: pointer;
+/* Header Wrapper */
+.header-wrapper {
     display: flex;
-    flex-direction: column;
-    /* Define uma altura mínima para ficar consistente */
-    min-height: 180px; 
-    text-decoration: none;
-    color: inherit;
-    position: relative; /* Para posicionar a estrela de favorito */
-    box-shadow: 0 1px 3px rgba(0,0,0,0.05);
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 2rem;
+    flex-wrap: wrap;
+    gap: 15px;
 }
 
-.media-item:hover {
-    transform: translateY(-4px);
-    box-shadow: 0 12px 20px -8px rgba(0, 0, 0, 0.1);
-    border-color: #D1D5DB;
+.page-title {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0;
 }
 
-/* --- ÍCONES E THUMBNAILS --- */
-
-/* Área do ícone/imagem no topo do cartão */
-.media-thumb-area {
-    flex-grow: 1; /* Ocupa o espaço disponível acima do texto */
-    display: flex;
-    align-items: flex-start;
-    justify-content: flex-start;
-    margin-bottom: 20px;
-    position: relative;
-}
-
-/* Ícone da Pasta (Amarelo, igual à imagem) */
-.folder-icon { 
-    width: 48px; height: 48px; 
-    fill: #FCD34D; color: #F59E0B; 
-}
-
-/* Ícone de Arquivo Genérico (Cinza) */
-.file-icon {
-    width: 48px; height: 48px;
-    color: #9CA3AF;
-    fill: #E5E7EB;
-}
-
-/* Thumbnail de Imagem (Foto real) */
-.file-thumb-img {
-    width: 100%;
-    height: 100px; /* Altura fixa para imagens */
-    object-fit: contain; /* Mostra a imagem inteira sem cortar */
-    object-position: left; /* Alinha à esquerda */
-    border-radius: 8px;
-}
-
-/* Estrela de Favorito (Opcional - Visual) */
-.favorite-star {
-    position: absolute;
-    top: 0;
-    right: 0;
-    color: #FBBF24; /* Amarelo ouro */
-    fill: currentColor;
-    width: 20px; height: 20px;
-    opacity: 0.8;
-}
-
-
-/* --- TEXTOS DO CARTÃO --- */
-.media-info-area {
-    display: flex;
-    flex-direction: column;
-    gap: 4px;
-}
-
-/* Nome do Item (Ex: "Nike Global") */
-.item-name {
-    font-size: 1.1rem;
-    font-weight: 600;
-    color: #111827; /* Texto quase preto */
-    width: 100%;
-    overflow: hidden;
-    text-overflow: ellipsis;
-    white-space: nowrap;
-}
-
-/* Quantidade de Itens (Ex: "234 items") */
-.item-meta {
-    font-size: 0.9rem;
-    color: #6B7280; /* Cinza médio */
-    font-weight: 400;
-}
-
-
-/* --- NAVEGAÇÃO (Breadcrumb) --- */
+/* Breadcrumb Navigation */
 .breadcrumb { 
     display: flex; 
     align-items: center; 
     gap: 8px; 
-    font-size: 1rem; 
+    font-size: 0.95rem; 
     color: #6B7280; 
-    margin-bottom: 20px; 
+    margin-top: 5px;
 }
-
 .breadcrumb a { 
     text-decoration: none; 
-    color: #111827; 
-    font-weight: 600; 
+    color: #4B5563; 
+    font-weight: 500; 
+    transition: color 0.2s;
 }
-
 .breadcrumb a:hover { 
-    text-decoration: underline; 
+    color: var(--primary-color); /* Blue highlight */
+}
+.breadcrumb .separator {
+    color: #9CA3AF;
 }
 
-/* --- ÁREA DE UPLOAD (MODAL) --- */
-.upload-area {
-    /* ADICIONE ISTO: */
-    position: relative; 
-    
-    /* O restante continua igual */
-    border: 2px dashed #D1D5DB;
-    border-radius: 10px;
-    padding: 40px;
-    text-align: center;
-    background-color: #F9FAFB;
+/* Buttons (Create/Upload) */
+.toggle-button, .add-task-button {
+    padding: 10px 16px;
+    border-radius: 8px;
+    font-weight: 500;
     cursor: pointer;
-    transition: border-color 0.2s;
+    border: 1px solid #E5E7EB;
+    background: white;
+    color: #374151;
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    transition: all 0.2s;
+}
+.toggle-button:hover { background: #F3F4F6; }
+
+.add-task-button {
+    background: var(--primary-color); /* Primary Blue */
+    color: white;
+    border: none;
+}
+.add-task-button:hover { background: var(--primary-color); }
+
+
+/* --- SECTION TITLES & STATS --- */
+.section-title {
+    font-size: 0.9rem;
+    color: #6B7280;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+    margin-bottom: 15px;
+    margin-top: 10px;
 }
 
-.upload-area:hover { 
-    border-color: #111827; 
+
+/* --- GRID LAYOUT --- */
+.media-grid {
+    display: grid;
+    /* Cards com largura mínima de 220px, ajustando-se à tela */
+    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+    gap: 24px;
+    padding-bottom: 40px;
 }
 
-/* Ajuste para o input file invisível */
-.file-input-wrapper { opacity: 0; position: absolute; inset: 0; }
-.file-input-hidden { position: absolute; top: 0; left: 0; width: 100%; height: 100%; opacity: 0; cursor: pointer; }
 
-/* Botão de Deletar (Lixeira) */
-.delete-btn {
+/* --- MEDIA CARD (Folder/File) --- */
+.media-item {
+    background-color: #FDFCF5; /* Cream background from your design */
+    border: 1px solid #E5E7EB;
+    border-radius: 16px;
+    padding: 20px;
+    text-align: left;
+    transition: all 0.2s ease;
+    cursor: pointer;
+    display: flex;
+    flex-direction: column;
+    justify-content: space-between; /* Pushes content to edges */
+    min-height: 180px; 
+    text-decoration: none;
+    color: inherit;
+    position: relative; /* Context for delete button */
+    box-shadow: 0 1px 2px rgba(0,0,0,0.05);
+}
+
+.media-item:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 10px 15px -3px rgba(0, 0, 0, 0.1);
+    border-color: #D1D5DB;
+}
+
+/* Specific Style for "Back" Button Card */
+.media-item.back-item {
+    background-color: #F3F4F6; /* Gray background */
+    justify-content: center;
+    align-items: center;
+    min-height: 180px;
+}
+.media-item.back-item:hover {
+    background-color: #E5E7EB;
+}
+.back-icon {
+    width: 32px;
+    height: 32px;
+    color: #6B7280;
+    margin-bottom: 10px;
+}
+
+
+/* --- DELETE BUTTON --- */
+.delete-form {
     position: absolute;
     top: 10px;
     right: 10px;
+    z-index: 20; /* Ensure it's above everything */
+}
+
+.delete-btn {
     background: rgba(255, 255, 255, 0.9);
     border: 1px solid #fee2e2;
     border-radius: 50%;
@@ -180,10 +152,14 @@
     align-items: center;
     justify-content: center;
     cursor: pointer;
-    z-index: 10; /* Fica acima do clique do card */
-    color: #ef4444; /* Vermelho */
+    color: #ef4444; /* Red */
     transition: all 0.2s;
-    padding: 0;
+    opacity: 0; /* Hidden by default */
+}
+
+/* Show button when hovering the card */
+.media-item:hover .delete-btn {
+    opacity: 1;
 }
 
 .delete-btn:hover {
@@ -191,8 +167,225 @@
     transform: scale(1.1);
 }
 
-/* Ajuste para o Card aceitar posicionamento absoluto dentro */
-.media-item {
-    position: relative; /* Obrigatório */
-    /* ... mantenha o resto do seu CSS media-item ... */
+
+/* --- ICONS & THUMBNAILS --- */
+.media-thumb-area {
+    flex-grow: 1;
+    display: flex;
+    align-items: flex-start; /* Align top */
+    justify-content: flex-start; /* Align left */
+    margin-bottom: 15px;
+}
+
+/* Folder Icon (Yellow) */
+.folder-icon { 
+    width: 56px; height: 56px; 
+    fill: #FCD34D; color: #F59E0B; 
+}
+
+/* File Icon (Gray) */
+.file-icon-wrapper i {
+    width: 48px; height: 48px;
+    color: #9CA3AF;
+}
+
+/* Image Thumbnail */
+.file-thumb-img {
+    width: 100%;
+    height: 110px; /* Fixed height for consistency */
+    object-fit: contain; /* Keep aspect ratio */
+    object-position: left center;
+    border-radius: 8px;
+}
+
+
+/* --- TEXT INFO --- */
+.media-info-area {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.item-name {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    width: 100%;
+    /* Truncate logic handled by bootstrap classes or below */
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+}
+
+.item-meta {
+    font-size: 0.85rem;
+    color: #6B7280;
+}
+
+
+/* --- EMPTY STATE --- */
+.empty-state {
+    text-align: center;
+    padding: 60px 20px;
+    grid-column: 1 / -1; /* Span full width */
+    color: #9CA3AF;
+    background: #F9FAFB;
+    border-radius: 12px;
+    border: 2px dashed #E5E7EB;
+}
+.empty-state h3 {
+    color: #374151;
+    margin-top: 10px;
+    font-size: 1.1rem;
+}
+.empty-icon {
+    width: 48px; height: 48px;
+    margin-bottom: 10px;
+    color: #D1D5DB;
+}
+
+/* --- MODAL UPLOAD AREA (SweetAlert uses its own style, but if you use custom modal:) --- */
+.upload-area {
+    position: relative;
+    border: 2px dashed #D1D5DB;
+    border-radius: 10px;
+    padding: 40px;
+    text-align: center;
+    background-color: #F9FAFB;
+    cursor: pointer;
+    transition: border-color 0.2s;
+}
+.upload-area:hover { border-color: #111827; }
+
+.swal2-container {
+    z-index: 10000 !important;
+}
+
+.swal2-popup {
+    font-size: 0.9rem !important; /* Ajuste opcional de tamanho */
+}
+
+.folder-card {
+    background: #fff;
+    border: 1px solid #f3f4f6; /* Borda bem sutil */
+    border-radius: 16px;       /* Arredondamento maior como na imagem */
+    padding: 12px;             /* Espaçamento interno */
+    text-decoration: none;
+    transition: all 0.3s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+    box-shadow: 0 2px 5px rgba(0,0,0,0.02);
+}
+
+.folder-card:hover {
+    transform: translateY(-5px);
+    box-shadow: 0 10px 20px rgba(0,0,0,0.08);
+    border-color: #e5e7eb;
+}
+
+.folder-visual {
+    background-color: #FEF3C7; /* Cor Creme/Amarelo suave (Igual a imagem) */
+    height: 140px;
+    border-radius: 12px;       /* Arredondamento da parte colorida */
+    border-top-left-radius: 0; /* Canto reto onde vai a aba */
+    position: relative;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 15px;
+    color: #928353;            /* Cor do ícone dentro da pasta */
+}
+
+/* A "ABA" DA PASTA (Orelhinha) */
+.folder-visual::before {
+    content: '';
+    position: absolute;
+    top: -10px;                /* Sobe para fora do quadrado */
+    left: 0;
+    width: 40%;                /* Largura da aba */
+    height: 12px;
+    background-color: #FEF3C7; /* Mesma cor da pasta */
+    border-radius: 10px 10px 0 0; /* Arredonda só em cima */
+}
+
+/* Ícone central (O Logo) */
+.folder-visual svg.folder-logo {
+    width: 48px;
+    height: 48px;
+    opacity: 0.6;              /* Leve transparência para parecer marca d'água */
+}
+
+.client-logo-img {
+    width: 100px;
+    opacity: 0.6;              /* Leve transparência para parecer marca d'água */
+}
+
+.client-logo-img {
+    /* Mantém o tamanho que você já definiu no resto do CSS, ex: max-width: 60px */
+
+    /* Deixa a imagem Preto e Branco */
+    filter: grayscale(100%);
+
+    /* (Opcional) Deixa ela um pouco transparente para reforçar a ideia de "inativo" ou marca d'água */
+    opacity: 0.6;
+
+    /* Adiciona uma transição suave para o efeito não ser brusco */
+    transition: all 0.3s ease;
+}
+
+/* 2. Estado Quando Passa o Mouse (:hover) */
+/* A correção principal é mudar :hov para :hover */
+.folder-card:hover .client-logo-img {
+    filter: grayscale(0%);
+    opacity: 1;
+    /* transform: scale(1.1); // Um leve zoom fica legal também */
+}
+
+.star-icon {
+    position: absolute;
+    top: 15px;
+    right: 15px;
+    color: #F59E0B; /* Amarelo ouro */
+    fill: #F59E0B;  /* Preenchido */
+    width: 18px;
+    height: 18px;
+    z-index: 2;
+}
+
+/* Botão de Opções (...) */
+.more-options {
+    position: absolute;
+    bottom: 15px;
+    right: 15px;
+    color: #9CA3AF;
+    padding: 5px;
+    border-radius: 50%;
+    transition: background 0.2s;
+}
+.more-options:hover {
+    background-color: #f3f4f6;
+    color: #374151;
+}
+
+/* TEXTOS */
+.folder-info {
+    padding: 0 5px;
+}
+
+.folder-name {
+    font-size: 1rem;
+    font-weight: 700;       /* Negrito forte como na imagem */
+    color: #1F2937;         /* Cinza escuro */
+    margin-bottom: 4px;
+    display: block;
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.folder-meta {
+    font-size: 0.85rem;
+    color: #6B7280;         /* Cinza claro */
+    font-weight: 400;
 }

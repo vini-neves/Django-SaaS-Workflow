@@ -25,17 +25,23 @@
 
         <div class="media-grid">
             {% for client in clients %}
-                <a href="{% url 'media_root' client.id %}" class="media-item">
+                <a href="{% url 'media_root' client.id %}" class="folder-card">
                     
-                    <div class="media-thumb-area">
-                        <svg class="folder-icon" viewBox="0 0 24 24" fill="currentColor">
-                            <path d="M20 6h-8l-2-2H4c-1.1 0-1.99.9-1.99 2L2 18c0 1.1.9 2 2 2h16c1.1 0 2-.9 2-2V8c0-1.1-.9-2-2-2zm0 12H4V8h16v10z"/>
-                        </svg>
+                    <div class="folder-visual">
+                        <i data-feather="star" class="star-icon"></i>
+
+                        {% if client.logo %}
+                            <img src="{{ client.logo.url }}" alt="{{ client.name }}" class="client-logo-img">
+                        {% else %}
+                            <span style="font-size: 32px; font-weight: bold; color: #928353; opacity: 0.5;">
+                                {{ client.name|slice:":1" }}
+                            </span>
+                        {% endif %}
                     </div>
 
-                    <div class="media-info-area">
-                        <span class="item-name">{{ client.name }}</span>
-                        <span class="item-meta">{{ client.folders.count }} pastas</span>
+                    <div class="folder-info">
+                        <span class="folder-name">{{ client.name }}</span>
+                        <span class="folder-meta">{{ client.folders.count }} pastas</span>
                     </div>
                 </a>
             {% empty %}
@@ -47,4 +53,13 @@
 
     </div>
 </div>
+{% endblock %}
+
+{% block extra_js %}
+    <script src="https://unpkg.com/feather-icons"></script>
+    <script>
+        document.addEventListener("DOMContentLoaded", function () {
+            feather.replace();
+        });
+    </script>
 {% endblock %}

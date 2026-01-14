@@ -27,9 +27,25 @@ class ClientForm(forms.ModelForm):
             
             'nome_representante': forms.TextInput(attrs={'class': 'form-input'}),
             'email_representante': forms.EmailInput(attrs={'class': 'form-input'}),
-            'anexo_contrato': forms.FileInput(attrs={'class': 'form-input'}),
-            'manual_marca': forms.FileInput(attrs={'class': 'form-input'}),
-            'logo': forms.FileInput(attrs={'class': 'form-input'}),
+
+            'anexo_contrato': forms.FileInput(attrs={
+                'class': 'form-input', 
+                'style': 'display: none;',  # Esconde o input original
+                'onchange': 'updateFileName(this)' # Atualiza o visual
+            }),
+
+            'manual_marca': forms.FileInput(attrs={
+                'class': 'form-input', 
+                'style': 'display: none;',
+                'onchange': 'updateFileName(this)'
+            }),
+            
+            'logo': forms.FileInput(attrs={
+                'class': 'form-input', 
+                'style': 'display: none;',
+                'onchange': 'updateFileName(this)'
+            }),
+            
             'is_active': forms.CheckboxInput(attrs={'class': 'form-checkbox'}),
         }
 

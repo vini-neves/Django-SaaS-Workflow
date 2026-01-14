@@ -2,6 +2,8 @@ from django.db import models
 from django.conf import settings
 import secrets
 import os
+import uuid
+from django.utils.text import slugify
 
 # --- ESCOLHAS GLOBAIS (STATUS) ---
 
@@ -345,10 +347,25 @@ class CalendarEvent(models.Model):
         return f"{self.client.name} - {self.date}"
 
 def client_r2_path(instance, filename):
-    # Organiza no R2 assim: media/client_1/nomedapasta/arquivo.jpg
-    # Isso evita bagunça no bucket
-    folder_name = instance.folder.name if instance.folder else 'root'
-    return f'clients/client_{instance.folder.client.id}/{folder_name}/{filename}'
+    
+    # Opção B: Se você usa django-tenants e quer o nome do tenant atual:
+    from django.db import connection
+    agency_name = slugify(connection.tenant.name)
+
+    # 2. Pega o nome do Cliente e limpa (tira espaços e acentos)
+    # Ex: "McDonald's Brasil" vira "mcdonalds-brasil"
+    client_name = slugify(instance.folder.client.name)
+    
+    # 3. Pega o nome da Pasta
+    folder_name = slugify(instance.folder.name) if instance.folder else 'root'
+    
+    # 4. Mantém a extensão original do arquivo
+    name, ext = os.path.splitext(filename)
+    clean_filename = slugify(name) + ext
+    unique_suffix = str(uuid.uuid4())[:4]
+    final_filename = f"{clean_filename}_{unique_suffix}{ext}"
+
+    return f'{agency_name}/{client_name}/{folder_name}/{final_filename}'
 
 class MediaFolder(models.Model):
     name = models.CharField("Nome da Pasta", max_length=255)

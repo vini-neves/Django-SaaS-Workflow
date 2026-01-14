@@ -1088,3 +1088,48 @@ def delete_file(request, file_id):
     
     # Redireciona de volta para a pasta onde o arquivo estava
     return redirect('media_folder', client_id=client_id, folder_id=folder.id)
+
+@login_required
+@require_POST
+def upload_photo_api(request):
+    """
+    View específica para receber upload via AJAX/Fetch um por um.
+    Retorna JSON para o SweetAlert atualizar a barra.
+    """
+    
+    # 1. Captura os dados
+    file = request.FILES.get('foto') # O nome 'foto' vem do formData.append('foto', file) do JS
+    client_id = request.POST.get('client_id')
+    folder_id = request.POST.get('folder_id')
+
+    # 2. Validações Básicas
+    if not file:
+        return JsonResponse({'status': 'error', 'message': 'Nenhum arquivo enviado.'}, status=400)
+    
+    if not folder_id:
+        return JsonResponse({'status': 'error', 'message': 'ID da pasta não fornecido.'}, status=400)
+
+    try:
+        # 3. Busca a Pasta (com segurança, verificando se pertence ao cliente)
+        # Isso impede que alguém mude o ID no HTML e salve na pasta de outro cliente
+        client = get_object_or_404(Client, pk=client_id)
+        current_folder = get_object_or_404(MediaFolder, pk=folder_id, client=client)
+
+        # 4. Cria e Salva o Arquivo
+        # O método .save() do seu model já lida com o filename e file_size automaticamente
+        media_file = MediaFile.objects.create(
+            folder=current_folder,
+            file=file
+        )
+
+        return JsonResponse({
+            'status': 'success', 
+            'message': 'Upload realizado',
+            'file_id': media_file.id,
+            'file_name': media_file.filename
+        })
+
+    except Exception as e:
+        # Log do erro no terminal do servidor para você debugar se precisar
+        print(f"ERRO API UPLOAD: {str(e)}")
+        return JsonResponse({'status': 'error', 'message': str(e)}, status=500)

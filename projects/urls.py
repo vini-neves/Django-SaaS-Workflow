@@ -89,4 +89,5 @@ urlpatterns = [
     path('media-center/', views.media_dashboard, name='media_dashboard'),
     path('media/folder/<int:folder_id>/delete/', views.delete_folder, name='delete_folder'),
     path('media/file/<int:file_id>/delete/', views.delete_file, name='delete_file'),
+    path('api/upload/photo/', views.upload_photo_api, name='api_upload_photo'),
 ]
