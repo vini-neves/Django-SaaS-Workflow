@@ -93,7 +93,7 @@
 </div>
 
 <div class="modal fade" id="clientModal" tabindex="-1" aria-hidden="true">
-    <div class="modal-dialog modal-dialog-centered"> 
+    <div class="modal-dialog modal-dialog-centered modal-dialog-scrollable modal-xl">
         <div class="modal-content custom-modal-content">
             
             <div class="modal-header">
@@ -140,23 +140,34 @@
                                 </div>
                             </div>
 
-                            <div class="form-group">
-                                <label>Contrato</label>
-                                <div class="upload-box" onclick="triggerUpload('id_contract_file')">
-                                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                                    <div class="upload-text">Arraste ou <span>clique para enviar</span></div>
-                                    <span class="upload-hint">PDF, DOC até 10MB</span>
-                                </div>
-                                {{ add_client_form.contract_file }} </div>
+                            <div class="upload-row">
 
-                            <div class="form-group">
-                                <label>Manual da Marca</label>
-                                <div class="upload-box" onclick="triggerUpload('id_brand_manual_file')">
-                                    <i class="fa-solid fa-cloud-arrow-up upload-icon"></i>
-                                    <div class="upload-text">Arraste ou <span>clique para enviar</span></div>
-                                    <span class="upload-hint">PDF, DOC até 10MB</span>
+                                <div class="form-group">
+                                    <label>Contrato</label>
+                                    <div class="upload-box" onclick="triggerUpload('id_anexo_contrato')">
+                                        <i class="fa-solid fa-file-contract upload-icon"></i> <div class="upload-text">Enviar</div>
+                                    </div>
+                                    {{ add_client_form.anexo_contrato }}
                                 </div>
-                                {{ add_client_form.brand_manual_file }}
+                            
+                                <div class="form-group">
+                                    <label>Manual</label>
+                                    <div class="upload-box" onclick="triggerUpload('id_manual_marca')">
+                                        <i class="fa-solid fa-book upload-icon"></i>
+                                        <div class="upload-text">Enviar</div>
+                                    </div>
+                                    {{ add_client_form.manual_marca }}
+                                </div>
+                            
+                                <div class="form-group">
+                                    <label>Logo</label>
+                                    <div class="upload-box" onclick="triggerUpload('id_logo')">
+                                        <i class="fa-solid fa-image upload-icon"></i>
+                                        <div class="upload-text">Enviar</div>
+                                    </div>
+                                    {{ add_client_form.logo }}
+                                </div>
+                            
                             </div>
                         </div>
 
