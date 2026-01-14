@@ -22,6 +22,22 @@
     margin-bottom: 30px;
 }
 
+#filePreviewModal:not(.show) {
+    display: none !important;
+    visibility: hidden !important;
+    z-index: -1 !important;
+}
+
+/* Garante que, ao abrir, ela fique por cima da modal de edição */
+#filePreviewModal.show {
+    z-index: 1070 !important; /* Maior que o padrão do Bootstrap (1055) */
+}
+
+/* Garante que o fundo escuro da segunda modal também fique no nível certo */
+.modal-backdrop.show:nth-of-type(2) {
+    z-index: 1065 !important;
+}
+
 .page-title h1 { font-size: 1.5rem; font-weight: 700; color: var(--c-dark); margin: 0; }
 .page-title p { color: var(--c-gray); margin: 5px 0 0 0; }
 

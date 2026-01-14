@@ -170,6 +170,9 @@ def get_client_data_api(request, pk):
         'data_finalizacao_contrato': client.data_finalizacao_contrato.strftime('%Y-%m-%d') if client.data_finalizacao_contrato else '',
         'is_active': client.is_active,
         'connected_platforms': connected_platforms,
+        'anexo_contrato_url': client.anexo_contrato.url if client.anexo_contrato else None,
+        'manual_marca_url': client.manual_marca.url if client.manual_marca else None,
+        'logo_url': client.logo.url if client.logo else None,
     }
     return JsonResponse(data)
 
