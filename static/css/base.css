@@ -74,15 +74,13 @@ body {
 }
 
 .nav-link {
-    display: flex; /* Alinha ícone e texto */
+    display: flex;
     align-items: center;
-    gap: 12px; /* Espaço entre ícone e texto */
-    
+    gap: 12px;
     color: var(--text-on-primary);
     opacity: 0.8;
     text-decoration: none;
     padding: 12px 15px;
-    margin-bottom: 8px;
     border-radius: 8px;
     transition: all 0.3s ease;
     font-size: 1.05em;
@@ -105,9 +103,12 @@ body {
 }
 
 .nav-link i {
-    width: 20px; /* Tamanho do ícone */
+    width: 20px;
     height: 20px;
     flex-shrink: 0;
+    display: flex;
+    align-items: center;
+    gap: 12px;
 }
 
 /* --- Perfil do Usuário --- */
